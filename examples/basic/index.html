@@ -1,1 +1,42 @@
-Mikudayooo!!!
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SSFHS — Test Page</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="card" id="card">
+    <header>
+      <div class="logo">SSFHS</div>
+      <div>
+        <h1>SSFHS — Simple Static File HTTP Server</h1>
+        <div class="subtitle small">Minimal test page — Miku palette, frosted glass, and test links</div>
+      </div>
+    </header>
+
+    <div class="description">
+      Use the items below to exercise how your SSFHS handles common test cases. Results of the "Malformed request" attempts are shown in the status box.
+    </div>
+
+    <div class="links" role="navigation" aria-label="test-links">
+      <a class="test-link" href="missing-file.html" title="Should 404 on a simple static server">🔎 404 — missing-file.html</a>
+      <a class="test-link" href="forbidden.html" title="If your server blocks access, this should return 403">⛔ 403 — forbidden.html</a>
+      <button class="test-btn btn-danger" id="btn400" title="Try multiple malformed-request approaches">💥 400 — Malformed request</button>
+      <button class="test-btn" id="btnClear">♻️ Clear status</button>
+    </div>
+
+    <div class="status" id="status" aria-live="polite">
+      <div class="item"><span class="tag">info</span>Status log initialized. Click the <strong>400 — Malformed request</strong> button to try several approaches.</div>
+    </div>
+
+    <div class="footer">
+      <div class="credit small">Created by <strong>epsiii</strong> 🩵 — page crafted with help from <strong>ChatGPT</strong></div>
+      <div class="small">Tip: open your server logs to see how SSFHS received each attempt.</div>
+    </div>
+  </div>
+
+<script src="scripts.js"></script>
+</body>
+</html>

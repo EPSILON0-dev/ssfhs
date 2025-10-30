@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSFHS Test Page</title>
+<style>
+  :root {
+    --miku-light: #6fe7d6;
+    --miku-mid: #009fb3;
+    --miku-dark: #0d1b1e;
+    --glass-bg: rgba(255, 255, 255, 0.08);
+  }
+
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--miku-dark), var(--miku-mid));
+    background-size: 200% 200%;
+    background-position: 100% 50%;
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: white;
+  }
+
+  .card {
+    background: var(--glass-bg);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 1.5rem;
+    padding: 2rem 3rem;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    max-width: 400px;
+    transition: box-shadow 0.5s ease, transform 0.3s ease;
+    animation: fadeIn 1.5s ease;
+  }
+
+  .card:hover {
+    box-shadow: 0 0 40px rgba(111, 231, 214, 0.5);
+    transform: translateY(-3px);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  h1 {
+    margin: 0 0 0.5em;
+    font-size: 1.8em;
+    color: white;
+    text-shadow: 0 0 15px rgba(111, 231, 214, 0.4);
+  }
+
+  p {
+    margin: 0.5em 0;
+    font-size: 1em;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .footer {
+    margin-top: 1.5em;
+    font-size: 0.85em;
+    opacity: 0.8;
+  }
+
+  .footer strong {
+    color: var(--miku-light);
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>SSFHS</h1>
+    <p><strong>Simple Static File HTTP Server</strong></p>
+    <p>Serving content the simple way — fast, minimal, and clean.</p>
+    <div class="footer">
+      <p>Created by <strong>epsiii</strong> 🩵</p>
+      <p>Page crafted with help from <strong>ChatGPT</strong></p>
+    </div>
+  </div>
+
+<script>
+  // Subtle floating animation for the card
+  const card = document.querySelector('.card');
+  let angle = 0;
+  function float() {
+    angle += 0.02;
+    card.style.transform = `translateY(${Math.sin(angle) * 4}px)`;
+    requestAnimationFrame(float);
+  }
+  float();
+</script>
+</body>
+</html>

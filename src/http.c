@@ -219,10 +219,10 @@ static int http_response_generate_internal(CharVector *vec, const char *status, 
     {
         // Add the message at the end
         char_vector_push_arr(vec, res_buff, res_buffsz);
+        free(res_type);
+        free(res_buff);
     }
 
-    free(res_type);
-    free(res_buff);
     return 0;
 }
 
@@ -262,7 +262,7 @@ int http_response_generate(CharVector *response, HTTPRequest *request)
     char *resolved_path;
     if (strcmp(request->url, "/") == 0)
     {
-        resolved_path = g_server_config.index_page_file;
+        resolved_path = strdup(g_server_config.index_page_file);
     }
     else
     {
