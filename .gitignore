@@ -1,0 +1,5 @@
+# Build directory
+build/
+
+# Some stupid script I made for starting the server
+start.sh
