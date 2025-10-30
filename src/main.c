@@ -23,6 +23,7 @@ int main(int argc, char **argv)
         int conn_fd = socket_await_connection(listen_fd);
         if (conn_fd < 0) { continue; }
 
+        // TODO Capture the whole request
         // 5. Use read/write on the connected socket
         char buffer[1024];
         size_t n = read(conn_fd, buffer, sizeof(buffer)-1);
@@ -38,31 +39,28 @@ int main(int argc, char **argv)
         {
             fprintf(stderr, "Something went wrong when parsing the request\n");
         }
-
-        // Generate the response
-        CharVector response;
-        char_vector_init(&response, 16);
-        if (http_response_generate(&response, &request))
-        {
-            fprintf(stderr, "Something went wrong when generating response\n");
-        }
         else 
         {
+            // Generate and send the response
+            CharVector response;
+            char_vector_init(&response, 16);
+            int status = http_response_generate(&response, &request);
             socket_send_response(&response, conn_fd);
+            char_vector_free(&response);
+
+            // Print log
+            printf("%s %s %s %d\n", request.method, request.url, "[IP Unimplemented :3]", status);
         }
-        char_vector_free(&response);
 
-        // 6. Close connections
+        // Close connections and reset the request vector
         close(conn_fd);
-
-        // Reset the request vector
         char_vector_free(&request_vec);
         char_vector_init(&request_vec, 16);
     }
+
+    // Cleanup before exit
     http_request_free(&request);
     char_vector_free(&request_vec);
-
     close(listen_fd);
-
     config_free(&g_server_config);
 }

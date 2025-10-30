@@ -3,3 +3,6 @@ build/
 
 # Some stupid script I made for starting the server
 start.sh
+
+# Ignore the log files if those appear for some reason
+*.log

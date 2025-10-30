@@ -168,7 +168,7 @@ int http_request_parse(const CharVector *vec, HTTPRequest *request)
 //                        Response Generation                               //
 //////////////////////////////////////////////////////////////////////////////
 
-static int http_response_generate_internal(CharVector *vec, const char *status, const char *path)
+static void http_response_generate_internal(CharVector *vec, const char *status, const char *path)
 {
     char buffer[128];
 
@@ -222,29 +222,27 @@ static int http_response_generate_internal(CharVector *vec, const char *status, 
         free(res_type);
         free(res_buff);
     }
-
-    return 0;
 }
 
-static int http_response_generate_bad_request(CharVector *vec)
+static void http_response_generate_bad_request(CharVector *vec)
 {
-    return http_response_generate_internal(vec,
+    http_response_generate_internal(vec,
         "400 Bad Request",
         g_server_config.bad_request_page_file
     );
 }
 
-static int http_response_generate_not_found(CharVector *vec)
+static void http_response_generate_not_found(CharVector *vec)
 {
-    return http_response_generate_internal(vec,
+    http_response_generate_internal(vec,
         "404 Not Found",
         g_server_config.not_found_page_file
     );
 }
 
-static int http_response_generate_forbidden(CharVector *vec)
+static void http_response_generate_forbidden(CharVector *vec)
 {
-    return http_response_generate_internal(vec,
+    http_response_generate_internal(vec,
         "403 Forbidden",
         g_server_config.forbidden_page_file
     );
@@ -255,7 +253,8 @@ int http_response_generate(CharVector *response, HTTPRequest *request)
     // If the request wasn't parsed correctly, return 400 Bad Request
     if (!request->okay)
     {
-        return http_response_generate_bad_request(response);
+        http_response_generate_bad_request(response);
+        return 400;
     }
 
     // Resolve "/" to "/index.html", and other paths to their URIs
@@ -273,14 +272,16 @@ int http_response_generate(CharVector *response, HTTPRequest *request)
     if (!resolved_path || !resource_is_accessible(resolved_path))
     {
         if (resolved_path) { free(resolved_path); }
-        return http_response_generate_not_found(response);
+        http_response_generate_not_found(response);
+        return 404;
     }
 
     // Return forbidden if resource is protected
     if (resource_is_protected(resolved_path))
     {
         free(resolved_path);
-        return http_response_generate_forbidden(response);
+        http_response_generate_forbidden(response);
+        return 403;
     }
 
     // Return the normal response if there was no problem
@@ -288,9 +289,9 @@ int http_response_generate(CharVector *response, HTTPRequest *request)
     {
         printf("[HTTP:GenerateResponse] Returning resource: %s\n", resolved_path);
     }
-    int res = http_response_generate_internal(response, "200 OK", resolved_path);
+    http_response_generate_internal(response, "200 OK", resolved_path);
     free(resolved_path);
-    return res;
+    return 200;
 }
 
 void http_request_free(HTTPRequest *request)
