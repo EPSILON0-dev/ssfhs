@@ -147,7 +147,9 @@ int resource_get(void **buff, size_t *buffsz, const char *path)
     if (rb != (int)(*buffsz))
     {
         fclose(f);
-        fprintf(stderr, "Something went wrong when accessing resource, read %d/%ld\n", rb, *buffsz);
+        snprintf(g_log_buffer, LOG_BUFFER_SIZE, 
+            "Something went wrong when accessing resource, read %d/%ld\n", rb, *buffsz);
+        log_error(g_log_buffer);
         return rb;
     }
 

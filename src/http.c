@@ -27,16 +27,6 @@ bool http_got_whole_request(const CharVector *vec)
         // Find the end of the line
         const char *lf_ptr = strchr(ptr, '\n');
 
-        // XXX Print the line
-        /*
-        int line_len = lf_ptr - ptr;
-        char *line = malloc(line_len);
-        line[line_len - 1] = '\0';
-        memcpy(line, ptr, line_len - 1);
-        printf("Checked line: >%s<\n", line);
-        free(line);
-        */
-
         // Check if the line is 1 char long and only contains CR
         //  We don't count LF into the line length
         if (lf_ptr - ptr == 1 && *ptr == '\r')

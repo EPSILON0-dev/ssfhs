@@ -19,9 +19,9 @@ static void print_help_and_exit(const char *prog_name)
     printf("Options:\n");
     printf("  -h, --help                    Show this help message and exit.\n");
     printf("  -p, --port [PORT]             Port to listen for connections (default: 8080).\n");
+    printf("  -d, --root-dir [DIR]          Root directory with the server files (required).\n");
     printf("  -l, --log-file [FILE]         File for storing logs (default: ssfhs.log).\n");
-    printf("  -c, --config-file [FILE]      Server config file (default: ssfhs.conf).\n");
-    printf("  -v, --verbose                 Enable verbose logs.\n");
+    printf("  -c, --config-file [FILE]      Server config file (required).\n");
     printf("  -d, --debug                   Enable debug logs.\n");
 
     exit(EXIT_SUCCESS);
@@ -30,7 +30,6 @@ static void print_help_and_exit(const char *prog_name)
 void cli_args_parse(ServerConfig *config, int argc, const char **argv) 
 {
     // Set default parameters
-    config->verbose = false;
     config->debug = false;
     config->port = 8080;
     config->config_file = NULL;
@@ -120,15 +119,8 @@ void cli_args_parse(ServerConfig *config, int argc, const char **argv)
             }
         }
 
-        // Verbose
-        else if (strcmp(arg, "--verbose") == 0 || strcmp(arg, "-v") == 0) 
-        {
-            config->verbose = true;
-            argi += 1;
-        }
-
         // Debug
-        else if (strcmp(arg, "--debug") == 0 || strcmp(arg, "-d") == 0) 
+        else if (strcmp(arg, "--debug") == 0 || strcmp(arg, "-v") == 0) 
         {
             config->debug = true;
             argi += 1;

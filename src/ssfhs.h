@@ -21,6 +21,8 @@
 #define SERVER_NAME "SSFHS"
 #define SERVER_VERSION "v0.1"
 
+#define LOG_BUFFER_SIZE 4096
+
 //////////////////////////////////////////////////////////////////////////////
 //                            Data Structures                               //
 //////////////////////////////////////////////////////////////////////////////
@@ -64,7 +66,6 @@ char *strtrim(const char *str);
 typedef struct {
     // Settings coming from the CLI
     uint16_t port;
-    bool verbose;
     bool debug;
     char *root_dir;
     char *log_file;
@@ -84,12 +85,18 @@ void config_load(ServerConfig *config);
 void config_free(ServerConfig *config);
 
 //////////////////////////////////////////////////////////////////////////////
+//                               Logging                                    //
+//////////////////////////////////////////////////////////////////////////////
+
+void log_error(const char *msg);
+void log_message(const char *msg);
+
+//////////////////////////////////////////////////////////////////////////////
 //                               Network                                    //
 //////////////////////////////////////////////////////////////////////////////
 
 int socket_open(uint16_t port);
-int socket_await_connection(int listen_fd);
-int socket_send_response(const CharVector *vec, int conn_fd);
+int socket_handle_connection(int listen_fd);
 
 //////////////////////////////////////////////////////////////////////////////
 //                                 HTTP                                     //
@@ -127,5 +134,6 @@ int resource_get(void **buff, size_t *buffsz, const char *path);
 //////////////////////////////////////////////////////////////////////////////
 
 extern ServerConfig g_server_config;
+extern char g_log_buffer[LOG_BUFFER_SIZE];
 
 #endif

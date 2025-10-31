@@ -1,5 +1,14 @@
 # Simple makefile for building SSFHS
-FLAGS=-O0 -g -fsanitize=undefined -fsanitize=address -Wall -Wextra -Wpedantic
+CC ?= cc
+
+BUILD_MODE=DEBUG
+# BUILD_MODE=RELEASE
+
+ifeq ($(BUILD_MODE),RELEASE)
+	FLAGS=-O2 -Wall -Wextra -Wpedantic
+else
+	FLAGS=-O0 -g -fsanitize=undefined -fsanitize=address -Wall -Wextra -Wpedantic
+endif
 
 SRCS = src/args.c \
 src/config.c \
@@ -7,6 +16,7 @@ src/socket.c \
 src/http.c \
 src/res.c \
 src/utils.c \
+src/log.c \
 src/main.c
 
 OBJS = $(SRCS:src/%.c=build/%.o)
@@ -19,10 +29,10 @@ build_dir:
 	mkdir -p build
 
 build/ssfhs: $(OBJS) | build_dir
-	gcc -o build/ssfhs $(FLAGS) $^
+	$(CC) -o build/ssfhs $(FLAGS) $^
 
 build/%.o: src/%.c | build_dir
-	gcc -c $(FLAGS) -o $@ $<
+	$(CC) -c $(FLAGS) -o $@ $<
 
 .PHONY: clean
 clean:
