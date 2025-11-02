@@ -158,7 +158,7 @@ int http_request_parse(const CharVector *vec, HTTPRequest *request)
 //                        Response Generation                               //
 //////////////////////////////////////////////////////////////////////////////
 
-static void http_response_generate_internal(CharVector *vec, const char *status, const char *path)
+static int http_response_generate_internal(CharVector *vec, const char *status, const char *path)
 {
     char buffer[128];
 
@@ -168,8 +168,10 @@ static void http_response_generate_internal(CharVector *vec, const char *status,
     char *res_type;
     if (path != NULL)
     {
-        resource_get(&res_buff, &res_buffsz, path);
+        // TODO Implement internal server error 
+        int result = resource_get(&res_buff, &res_buffsz, path);
         res_type = resource_get_content_type(path);
+        if (result) { return 1; }
     }
 
     // Generate the 1st line
@@ -212,6 +214,8 @@ static void http_response_generate_internal(CharVector *vec, const char *status,
         free(res_type);
         free(res_buff);
     }
+
+    return 0;
 }
 
 static void http_response_generate_bad_request(CharVector *vec)
@@ -235,6 +239,14 @@ static void http_response_generate_forbidden(CharVector *vec)
     http_response_generate_internal(vec,
         "403 Forbidden",
         g_server_config.forbidden_page_file
+    );
+}
+
+static void http_response_generate_server_error(CharVector *vec)
+{
+    http_response_generate_internal(vec,
+        "500 Internal Server Error",
+        g_server_config.server_error_page_file
     );
 }
 
@@ -279,7 +291,15 @@ int http_response_generate(CharVector *response, HTTPRequest *request)
     {
         printf("[HTTP:GenerateResponse] Returning resource: %s\n", resolved_path);
     }
-    http_response_generate_internal(response, "200 OK", resolved_path);
+
+    // Try to return the resource, if that fails return 500, if that fails return empty 500 code
+    if (http_response_generate_internal(response, "200 OK", resolved_path))
+    {
+        http_response_generate_server_error(response);
+        return 500;
+    }
+
+    // Normal exit
     free(resolved_path);
     return 200;
 }

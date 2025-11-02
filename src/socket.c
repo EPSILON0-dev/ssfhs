@@ -9,6 +9,8 @@
  */
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -23,7 +25,7 @@ int socket_open(uint16_t port)
     // Create socket (IPv4, TCP)
     fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) {
-        fprintf(stderr, "Failed to open socket: %d\n", fd);
+        fprintf(stderr, "Failed to open socket: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -35,7 +37,7 @@ int socket_open(uint16_t port)
 
     int bind_res = bind(fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
     if (bind_res < 0) {
-        fprintf(stderr, "Failed to bind socket: %d\n", bind_res);
+        fprintf(stderr, "Failed to bind socket: %s\n", strerror(errno));
         close(fd);
         exit(EXIT_FAILURE);
     }
@@ -43,7 +45,7 @@ int socket_open(uint16_t port)
     // Start listening
     int listen_res = listen(fd, 5);
     if (listen_res < 0) {  // backlog = 5
-        fprintf(stderr, "Failed to start listener: %d\n", fd);
+        fprintf(stderr, "Failed to start listener: %s\n", strerror(errno));
         close(fd);
         exit(EXIT_FAILURE);
     }
@@ -57,7 +59,7 @@ static int socket_send_response(const CharVector *vec, int conn_fd)
     if (sent < 0)
     {
         snprintf(g_log_buffer, LOG_BUFFER_SIZE, 
-            "Something went wrong while sending response: %d\n", conn_fd);
+            "Something went wrong while sending response: %s\n", strerror(errno));
         log_error(g_log_buffer);
         close(conn_fd);
     }

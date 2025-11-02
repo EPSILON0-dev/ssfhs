@@ -7,6 +7,7 @@
  * @copyright Copyright (c) 2025
  * 
  */
+#include <stdio.h>
 #include <time.h>
 #include "ssfhs.h"
 

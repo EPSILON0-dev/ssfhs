@@ -7,6 +7,7 @@
  * @copyright Copyright (c) 2025
  * 
  */
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,13 +43,13 @@ void config_load(ServerConfig *config)
     FILE *config_file = fopen(file_path, "r");
     if (!config_file)
     {
-        fprintf(stderr, "Could not open config file: %s\n", config->config_file);
+        fprintf(stderr, "Could not open config file: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
     // Initialize config with default values
     string_array_init(&config->protected_files);
-    config->not_found_page_file = NULL;
+    string_array_init(&config->dynamic_files);
 
     // Parse the lines
     int line_index = 0;
@@ -117,12 +118,31 @@ void config_load(ServerConfig *config)
             }
         }
 
+        else if (strcmp(key, "DYNAMIC") == 0)
+        {
+            char *full_path = config_resolve_path(value);
+            if (full_path)
+            {
+                string_array_add(&config->dynamic_files, full_path);
+                if (config->debug)
+                {
+                    printf("[CONFIG] Registered DYNAMIC file: %s\n", value);
+                }
+                free(full_path);
+            }
+            else
+            {
+                fprintf(stderr, "Failed to resolve path: %s (ignored)\n", value);
+            }
+        }
+
+
         else if (strcmp(key, "400_PAGE") == 0)
         {
             config->bad_request_page_file = config_resolve_path(value);
             if (config->debug)
             {
-                printf("[CONFIG] 400 Page path set to: %s\n", value);
+                printf("[CONFIG] 400 Page path set to: %s\n", config->bad_request_page_file);
             }
         }
 
@@ -131,7 +151,7 @@ void config_load(ServerConfig *config)
             config->forbidden_page_file = config_resolve_path(value);
             if (config->debug)
             {
-                printf("[CONFIG] 403 Page path set to: %s\n", value);
+                printf("[CONFIG] 403 Page path set to: %s\n", config->forbidden_page_file);
             }
         }
 
@@ -140,7 +160,16 @@ void config_load(ServerConfig *config)
             config->not_found_page_file = config_resolve_path(value);
             if (config->debug)
             {
-                printf("[CONFIG] 404 Page path set to: %s\n", value);
+                printf("[CONFIG] 404 Page path set to: %s\n", config->not_found_page_file);
+            }
+        }
+
+        else if (strcmp(key, "500_PAGE") == 0)
+        {
+            config->server_error_page_file = config_resolve_path(value);
+            if (config->debug)
+            {
+                printf("[CONFIG] 404 Page path set to: %s\n", config->server_error_page_file);
             }
         }
 
@@ -149,7 +178,7 @@ void config_load(ServerConfig *config)
             config->index_page_file = config_resolve_path(value);
             if (config->debug)
             {
-                printf("[CONFIG] Index Page path set to: %s\n", value);
+                printf("[CONFIG] Index Page path set to: %s\n", config->index_page_file);
             }
         }
 
@@ -181,7 +210,9 @@ void config_load(ServerConfig *config)
         printf("    400 page: %s\n", config->bad_request_page_file);
         printf("    403 page: %s\n", config->forbidden_page_file);
         printf("    404 page: %s\n", config->not_found_page_file);
+        printf("    500 page: %s\n", config->server_error_page_file);
         printf("    Protected files: %ld\n", config->protected_files.count);
+        printf("    Dynamic files: %ld\n", config->dynamic_files.count);
     }
 }
 
@@ -197,5 +228,7 @@ void config_free(ServerConfig *config)
     if (config->bad_request_page_file) { free(config->bad_request_page_file); }
     if (config->forbidden_page_file) { free(config->forbidden_page_file); }
     if (config->not_found_page_file) { free(config->not_found_page_file); }
+    if (config->server_error_page_file) { free(config->server_error_page_file); }
     string_array_free(&config->protected_files);
+    string_array_free(&config->dynamic_files);
 }

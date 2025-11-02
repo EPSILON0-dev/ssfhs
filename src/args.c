@@ -29,6 +29,9 @@ static void print_help_and_exit(const char *prog_name)
 
 void cli_args_parse(ServerConfig *config, int argc, const char **argv) 
 {
+    // Clear the config
+    memset(config, 0, sizeof(*config));
+
     // Set default parameters
     config->debug = false;
     config->port = 8080;

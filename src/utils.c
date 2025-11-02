@@ -67,6 +67,7 @@ void char_vector_init(CharVector *vec, int initial_size)
     vec->items[vec->count] = '\0';
 }
 
+// Adds a null terminator at the end
 void char_vector_push(CharVector *vec, char c)
 {
     if (vec->count + 1 >= vec->max_size)
@@ -78,6 +79,7 @@ void char_vector_push(CharVector *vec, char c)
     vec->items[vec->count] = '\0';
 }
 
+// Adds a null terminator at the end
 void char_vector_push_arr(CharVector *vec, const char *arr, size_t len)
 {
     while (vec->count + len >= vec->max_size)

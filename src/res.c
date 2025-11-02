@@ -75,6 +75,20 @@ bool resource_is_protected(const char *path)
     return false;
 }
 
+// Path already has to be resolved
+bool resource_is_dynamic(const char *path)
+{
+    for (size_t i = 0; i < g_server_config.dynamic_files.count; i++)
+    {
+        if (strcmp(path, g_server_config.dynamic_files.items[i]) == 0)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static char* resource_get_extension(const char *path)
 {
     // Find the last separator
@@ -141,7 +155,7 @@ int resource_get(void **buff, size_t *buffsz, const char *path)
     *buffsz = ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    // Allocate the space for the resource
+    // Allocate the space for the resource and get it
     *buff = malloc(*buffsz);
     int rb = fread(*buff, 1, *buffsz, f);
     if (rb != (int)(*buffsz))
@@ -153,6 +167,14 @@ int resource_get(void **buff, size_t *buffsz, const char *path)
         return rb;
     }
 
+    // Close the file
     fclose(f);
+
+    // Process the file it it's a dynamic file
+    if (resource_is_dynamic(path))
+    {
+        dynamic_process(buff, buffsz);
+    }
+
     return 0;
 }

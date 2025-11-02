@@ -17,6 +17,7 @@ src/http.c \
 src/res.c \
 src/utils.c \
 src/log.c \
+src/dyn.c \
 src/main.c
 
 OBJS = $(SRCS:src/%.c=build/%.o)

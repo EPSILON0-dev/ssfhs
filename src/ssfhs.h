@@ -9,7 +9,6 @@
 #ifndef SSFHS_H
 #define SSFHS_H
 
-#include <stdio.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -20,6 +19,8 @@
 
 #define SERVER_NAME "SSFHS"
 #define SERVER_VERSION "v0.1"
+
+#define DYNAMIC_TAG "sshfs-dyn"
 
 #define LOG_BUFFER_SIZE 4096
 
@@ -73,10 +74,12 @@ typedef struct {
 
     // Settings coming from the config
     StringArray protected_files;
+    StringArray dynamic_files;
     char *index_page_file;
     char *bad_request_page_file;
     char *forbidden_page_file;
     char *not_found_page_file;
+    char *server_error_page_file;
 } ServerConfig;
 
 void cli_args_parse(ServerConfig *config, int argc, const char **argv);
@@ -126,8 +129,15 @@ int http_response_generate(CharVector *response, HTTPRequest *request);
 char *resource_resolve_url_path(const char *path);
 bool resource_is_accessible(const char *path);
 bool resource_is_protected(const char *path);
+bool resource_is_dynamic(const char *path);
 char* resource_get_content_type(const char *path);
 int resource_get(void **buff, size_t *buffsz, const char *path);
+
+//////////////////////////////////////////////////////////////////////////////
+//                          Dynamic Resource                                //
+//////////////////////////////////////////////////////////////////////////////
+
+int dynamic_process(void **buff, size_t *buffsz);
 
 //////////////////////////////////////////////////////////////////////////////
 //                           Global Variables                               //
