@@ -13,7 +13,7 @@
 #include <string.h>
 #include "ssfhs.h"
 
-static char* config_resolve_path(char *path)
+static char* config_resolve_path_raw(char *path)
 {
     // Get the directiory of the config file
     char *sep = strrchr(g_server_config.config_file, '/');
@@ -28,11 +28,17 @@ static char* config_resolve_path(char *path)
     memcpy(raw_path, dir, strlen(dir));
     memcpy(raw_path + strlen(dir), path, strlen(path));
     raw_path[strlen(dir) + strlen(path)] = '\0';
+    free(dir);
+
+    return raw_path;
+}
+
+static char* config_resolve_path(char *path)
+{
+    char *raw_path = config_resolve_path_raw(path);
     char *real_path = realpath(raw_path, NULL);
-    if (!real_path) { return NULL; }
 
     free(raw_path);
-    free(dir);
     return real_path;
 }
 
@@ -169,7 +175,7 @@ void config_load(ServerConfig *config)
             config->server_error_page_file = config_resolve_path(value);
             if (config->debug)
             {
-                printf("[CONFIG] 404 Page path set to: %s\n", config->server_error_page_file);
+                printf("[CONFIG] 500 Page path set to: %s\n", config->server_error_page_file);
             }
         }
 
@@ -181,6 +187,33 @@ void config_load(ServerConfig *config)
                 printf("[CONFIG] Index Page path set to: %s\n", config->index_page_file);
             }
         }
+
+        else if (strcmp(key, "REQUEST_FILE") == 0)
+        {
+            // Create the request file
+            char *raw_path = config_resolve_path_raw(value);
+            FILE *f = fopen(raw_path, "w");
+            if (!f)
+            {
+                fprintf(stderr, "Failed to create or open the request file: %s\n",
+                    strerror(errno));
+                exit(EXIT_FAILURE);
+            }
+            fclose(f);
+            free(raw_path);
+
+            // Store the file path
+            config->request_file = config_resolve_path(value);
+            if (config->debug)
+            {
+                printf("[CONFIG] Request file path set to: %s\n", config->request_file);
+            }
+
+            // We also have to protect that file
+            string_array_add(&config->protected_files, config->request_file);
+        }
+
+        // TODO add parameters: receive timeout, dynamic command timeout, dynamic error ignore
 
         else
         {
@@ -199,6 +232,11 @@ void config_load(ServerConfig *config)
         }
     }
 
+    if (config->dynamic_files.count && !config->request_file)
+    {
+        fprintf(stderr, "WARN: Dynamic files defined, but no request file location specified.\n");
+    }
+
     // Print debug info
     if (config->debug)
     {
@@ -213,6 +251,7 @@ void config_load(ServerConfig *config)
         printf("    500 page: %s\n", config->server_error_page_file);
         printf("    Protected files: %ld\n", config->protected_files.count);
         printf("    Dynamic files: %ld\n", config->dynamic_files.count);
+        printf("    Request file: %s\n", config->request_file);
     }
 }
 
@@ -229,6 +268,7 @@ void config_free(ServerConfig *config)
     if (config->forbidden_page_file) { free(config->forbidden_page_file); }
     if (config->not_found_page_file) { free(config->not_found_page_file); }
     if (config->server_error_page_file) { free(config->server_error_page_file); }
+    if (config->request_file) { free(config->request_file); }
     string_array_free(&config->protected_files);
     string_array_free(&config->dynamic_files);
 }

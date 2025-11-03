@@ -80,6 +80,7 @@ typedef struct {
     char *forbidden_page_file;
     char *not_found_page_file;
     char *server_error_page_file;
+    char *request_file;
 } ServerConfig;
 
 void cli_args_parse(ServerConfig *config, int argc, const char **argv);
@@ -91,6 +92,7 @@ void config_free(ServerConfig *config);
 //                               Logging                                    //
 //////////////////////////////////////////////////////////////////////////////
 
+void log_set_request_id(int id);
 void log_error(const char *msg);
 void log_message(const char *msg);
 
@@ -117,10 +119,11 @@ typedef struct {
 } HTTPRequest;
 
 bool http_got_whole_request(const CharVector *vec);
+int http_request_store(const CharVector *vec);
 void http_request_init(HTTPRequest *request);
 int http_request_parse(const CharVector *vec, HTTPRequest *request);
 void http_request_free(HTTPRequest *request);
-int http_response_generate(CharVector *response, HTTPRequest *request);
+int http_response_generate(CharVector *response, HTTPRequest *request, bool force_error);
 
 //////////////////////////////////////////////////////////////////////////////
 //                              Resource                                    //

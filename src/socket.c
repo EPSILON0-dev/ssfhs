@@ -97,6 +97,7 @@ int socket_handle_connection(int listen_fd)
     }
 
     // TODO Capture the whole request
+    // TODO Add timeout
     // 5. Use read/write on the connected socket
     char buffer[1024];
     size_t n = read(conn_fd, buffer, sizeof(buffer)-1);
@@ -107,19 +108,25 @@ int socket_handle_connection(int listen_fd)
     // For now we assume that the requests are short
     // if (http_got_whole_request(&request_vec)) 
 
+
     // Parse the request
-    if (http_request_parse(&request_vec, &request))
+    int parse_res = http_request_parse(&request_vec, &request);
+    if (parse_res)
     {
         snprintf(g_log_buffer, LOG_BUFFER_SIZE, 
             "Something went wrong when parsing the request\n");
         log_error(g_log_buffer);
     }
+
     else 
     {
+        // Store the request to the request file
+        int request_store_error = http_request_store(&request_vec);
+
         // Generate and send the response
         CharVector response;
         char_vector_init(&response, 16);
-        int status = http_response_generate(&response, &request);
+        int status = http_response_generate(&response, &request, request_store_error);
         socket_send_response(&response, conn_fd);
         char_vector_free(&response);
 

@@ -18,34 +18,6 @@
 static const char *opening_tag = "<" DYNAMIC_TAG ">";
 static const char *closing_tag = "</" DYNAMIC_TAG ">";
 
-// XXX May be unused
-__attribute__((unused)) static int dynamic_count_tags(const CharVector *vec, int *count)
-{
-    const char *ptr = vec->items;
-    while (ptr < vec->items + vec->count)
-    {
-        // Find the opening tag
-        char *opening = strstr(ptr, opening_tag);
-        if (!opening) { break; }
-        ptr = opening + strlen(opening_tag);
-
-        // Find the closing tag
-        char *closing = strstr(ptr, closing_tag);
-        if (!closing) { return 1; }
-        ptr = closing + strlen(closing_tag);
-
-        // Increment the counter
-        (*count)++;
-    }
-
-    if (g_server_config.debug)
-    {
-        printf("[DYNAMIC:CountTags] Found %d dynamic tags.\n", *count);
-    }
-
-    return 0;
-}
-
 static int dynamic_extract_commands(const CharVector *vec, StringArray *dyncmds)
 {
     const char *ptr = vec->items;
@@ -83,7 +55,11 @@ static int dynamic_extract_commands(const CharVector *vec, StringArray *dyncmds)
 
 static int dynamic_execute_command(const char *cmd, char **output, int index)
 {
-    // Create readef FDs
+    // TODO add timeout
+    // TODO set cwd to root dir
+    // TODO add stderr print on fail
+
+    // Create pipe FDs
     int fds[2];
     if (pipe(fds) == -1) {
         snprintf(g_log_buffer, LOG_BUFFER_SIZE, 
@@ -146,6 +122,7 @@ static int dynamic_execute_command(const char *cmd, char **output, int index)
     *output = strdup(vec.items);
     char_vector_free(&vec);
 
+    // TODO fail ignore enable
     if (status != 0)
     {
         snprintf(g_log_buffer, LOG_BUFFER_SIZE, 

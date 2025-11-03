@@ -42,6 +42,26 @@ bool http_got_whole_request(const CharVector *vec)
     return false;
 }
 
+int http_request_store(const CharVector *vec)
+{
+    bool request_store_error = false;
+    FILE *rf = fopen(g_server_config.request_file, "w");
+    if (!rf) 
+    { 
+        request_store_error = true;
+    } 
+    else 
+    {
+        int bw = fwrite(vec->items, 1, vec->count, rf);
+        if ((size_t)bw != vec->count) 
+        { 
+            request_store_error = true; 
+        }
+        fclose(rf);
+    }
+    return request_store_error;
+}
+
 static int http_request_parse_1st_line(const CharVector *vec, HTTPRequest *request, char **ptr)
 {
     *ptr = vec->items;
@@ -168,7 +188,6 @@ static int http_response_generate_internal(CharVector *vec, const char *status, 
     char *res_type;
     if (path != NULL)
     {
-        // TODO Implement internal server error 
         int result = resource_get(&res_buff, &res_buffsz, path);
         res_type = resource_get_content_type(path);
         if (result) { return 1; }
@@ -250,8 +269,15 @@ static void http_response_generate_server_error(CharVector *vec)
     );
 }
 
-int http_response_generate(CharVector *response, HTTPRequest *request)
+int http_response_generate(CharVector *response, HTTPRequest *request, bool force_error)
 {
+    // If an error was forced, generate internal server error 
+    if (force_error)
+    {
+        http_response_generate_server_error(response);
+        return 500;
+    }
+
     // If the request wasn't parsed correctly, return 400 Bad Request
     if (!request->okay)
     {
