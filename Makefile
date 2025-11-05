@@ -4,10 +4,12 @@ CC ?= cc
 BUILD_MODE=DEBUG
 # BUILD_MODE=RELEASE
 
+COMMON_FLAGS=-Wall -Wextra -Wpedantic -lpthread
+
 ifeq ($(BUILD_MODE),RELEASE)
-	FLAGS=-O2 -Wall -Wextra -Wpedantic
+	FLAGS=-O2 $(COMMON_FLAGS)
 else
-	FLAGS=-O0 -g -fsanitize=undefined -fsanitize=address -Wall -Wextra -Wpedantic
+	FLAGS=-O0 -g -fsanitize=undefined -fsanitize=address $(COMMON_FLAGS)
 endif
 
 SRCS = src/args.c \

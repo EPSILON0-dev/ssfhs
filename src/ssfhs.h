@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <arpa/inet.h>
 
 //////////////////////////////////////////////////////////////////////////////
 //                                 Defines                                  //
@@ -22,7 +23,6 @@
 
 #define DYNAMIC_TAG "sshfs-dyn"
 
-#define LOG_BUFFER_SIZE 4096
 #define RECEIVE_POLL_GRANULARITY_MS 50    // ms
 #define DEFAULT_REQUEST_TIMEOUT     5000  // ms
 #define DEFAULT_DYNAMIC_TIMEOUT     100   // ms
@@ -101,16 +101,21 @@ void config_free(ServerConfig *config);
 //                               Logging                                    //
 //////////////////////////////////////////////////////////////////////////////
 
-void log_set_request_id(int id);
-void log_error(const char *msg);
-void log_message(const char *msg);
+void log_error(int conn_id, const char *format, ...);
+void log_message(int conn_id, const char *format, ...);
 
 //////////////////////////////////////////////////////////////////////////////
 //                               Network                                    //
 //////////////////////////////////////////////////////////////////////////////
 
+typedef struct {
+    int conn_fd;
+    int conn_id;
+    struct sockaddr_storage cliaddr;
+} ConnectionDescriptor;
+
 int socket_open(uint16_t port);
-int socket_handle_connection(int listen_fd);
+int socket_accept_connection(int listen_fd);
 
 //////////////////////////////////////////////////////////////////////////////
 //                                 HTTP                                     //
@@ -156,6 +161,5 @@ int dynamic_process(void **buff, size_t *buffsz);
 //////////////////////////////////////////////////////////////////////////////
 
 extern ServerConfig g_server_config;
-extern char g_log_buffer[LOG_BUFFER_SIZE];
 
 #endif

@@ -64,9 +64,7 @@ static int dynamic_execute_command(const char *cmd, char **output, int index)
     // Create pipe FDs
     int fds[2];
     if (pipe(fds) == -1) {
-        snprintf(g_log_buffer, LOG_BUFFER_SIZE, 
-            "Failed to open pipe for dynamic command: %s\n", strerror(errno));
-        log_error(g_log_buffer);
+        log_error(0, "Failed to open pipe for dynamic command: %s\n", strerror(errno));
         return 1;
     }
 
@@ -74,9 +72,7 @@ static int dynamic_execute_command(const char *cmd, char **output, int index)
     pid_t pid = fork();
     if (pid < 0)
     {
-        snprintf(g_log_buffer, LOG_BUFFER_SIZE, 
-            "Failed to fork for dynamic command: %s\n", strerror(errno));
-        log_error(g_log_buffer);
+        log_error(0, "Failed to fork for dynamic command: %s\n", strerror(errno));
         close(fds[0]);
         close(fds[1]);
         return 1;
@@ -128,15 +124,13 @@ static int dynamic_execute_command(const char *cmd, char **output, int index)
     {
         if (g_server_config.ignore_dynamic_errors)
         {
-            snprintf(g_log_buffer, LOG_BUFFER_SIZE, 
-                "Dynamic command %d (pid: %d) failed with exit code: %d (ignored)\n", index, pid, status);
-            log_error(g_log_buffer);
+            log_error(0, "Dynamic command %d (pid: %d) failed with exit code: %d (ignored)\n",
+                index, pid, status);
         }
         else
         {
-            snprintf(g_log_buffer, LOG_BUFFER_SIZE, 
-                "Dynamic command %d (pid: %d) failed with exit code: %d\n", index, pid, status);
-            log_error(g_log_buffer);
+            log_error(0, "Dynamic command %d (pid: %d) failed with exit code: %d\n",
+                index, pid, status);
             return 1;
         }
     }
