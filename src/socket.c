@@ -7,11 +7,13 @@
  * @copyright Copyright (c) 2025
  * 
  */
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <unistd.h>
+ #include <string.h>
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <errno.h>
+#include <sys/poll.h>
+ #include <unistd.h>
+ #include <poll.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -66,13 +68,11 @@ static int socket_send_response(const CharVector *vec, int conn_fd)
     return sent;
 }
 
+// TODO break up this function
 int socket_handle_connection(int listen_fd)
 {
     CharVector request_vec;
     HTTPRequest request;
-
-    char_vector_init(&request_vec, 16);
-    http_request_init(&request);
 
     // Accept the incoming connection
     struct sockaddr_storage cliaddr;
@@ -86,6 +86,10 @@ int socket_handle_connection(int listen_fd)
         return 1; 
     }
 
+    char_vector_init(&request_vec, 16);
+    http_request_init(&request);
+
+	// TODO Fork for incoming connection
     // Get the connection IP
     char ipstr[64];
     if (cliaddr.ss_family == AF_INET) {
@@ -96,18 +100,48 @@ int socket_handle_connection(int listen_fd)
         inet_ntop(AF_INET6, &s->sin6_addr, ipstr, sizeof(ipstr));
     }
 
-    // TODO Capture the whole request
-    // TODO Add timeout
-    // 5. Use read/write on the connected socket
-    char buffer[1024];
-    size_t n = read(conn_fd, buffer, sizeof(buffer)-1);
-    if (n > 0) {
-        char_vector_push_arr(&request_vec, buffer, n);
+    // Read the whole request with timeout
+    uint64_t receive_start_time = now_ms();
+    for ( ;; )
+    {
+        int time_elapsed = (int)(now_ms() - receive_start_time);
+        if (time_elapsed > g_server_config.request_timeout_ms)
+        {
+            snprintf(g_log_buffer, LOG_BUFFER_SIZE, 
+                "Request from %s timed out after %d ms\n", 
+                ipstr, g_server_config.request_timeout_ms);
+            log_error(g_log_buffer);
+            close(conn_fd);
+            char_vector_free(&request_vec);
+            return 1;
+        }
+
+        struct pollfd pfd;
+        pfd.fd = conn_fd;
+        pfd.events = POLLIN;
+        int poll_res = poll(&pfd, 1, RECEIVE_POLL_GRANULARITY_MS);
+        if (poll_res < 0)
+        {
+            snprintf(g_log_buffer, LOG_BUFFER_SIZE, 
+                "Something went wrong while polling for data: %s\n", strerror(errno));
+            log_error(g_log_buffer);
+            close(conn_fd);
+            char_vector_free(&request_vec);
+            return 1;
+        }
+
+        else if (poll_res == 0)
+        {
+            // Timeout, no data yet
+            continue;
+        }
+
+        // Data is available to read
+        char buffer[1024];
+        size_t n = read(conn_fd, buffer, sizeof(buffer)-1);
+        char_vector_push_arr(&request_vec, buffer, n); 
+        if (http_got_whole_request(&request_vec)) { break; }
     }
-
-    // For now we assume that the requests are short
-    // if (http_got_whole_request(&request_vec)) 
-
 
     // Parse the request
     int parse_res = http_request_parse(&request_vec, &request);

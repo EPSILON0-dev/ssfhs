@@ -19,7 +19,10 @@
 
 bool http_got_whole_request(const CharVector *vec)
 {
-    // TODO Add support for PUT & POST methods
+    bool found_header_end = false;
+
+    // Check if there's content length in the request
+    char *cl_ptr = strstr(vec->items, "Content-Length");
 
     const char *ptr = vec->items;
     do 
@@ -31,7 +34,9 @@ bool http_got_whole_request(const CharVector *vec)
         //  We don't count LF into the line length
         if (lf_ptr - ptr == 1 && *ptr == '\r')
         {
-            return true;
+            ptr += 2;
+            found_header_end = true;
+            break;
         }
 
         // Move the pointer (skip the LF itself)
@@ -39,7 +44,36 @@ bool http_got_whole_request(const CharVector *vec)
     } 
     while (ptr < vec->items + vec->count);
 
-    return false;
+    // If we found content length check if the whole length was received
+    if (cl_ptr)
+    {
+        char *len_start = strchr(cl_ptr, ':');
+        char *len_end = strchr(cl_ptr, '\r');
+
+        char *len_str_raw = char_vector_get_alloc(vec, 
+            len_start - vec->items + 1, len_end - len_start - 1);
+        char *len_str = strtrim(len_str_raw);
+
+        int len = atoi(len_str);
+
+        free(len_str);
+        free(len_str_raw);
+
+        if (!len)
+        { 
+            return false; 
+        }
+        else
+        {
+            return (vec->items + vec->count >= ptr + len);
+        }
+    }
+
+    // Just return whether we found the end of the headers
+    else
+    {
+        return found_header_end;
+    }
 }
 
 int http_request_store(const CharVector *vec)

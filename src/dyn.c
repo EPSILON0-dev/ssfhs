@@ -58,6 +58,8 @@ static int dynamic_execute_command(const char *cmd, char **output, int index)
     // TODO add timeout
     // TODO set cwd to root dir
     // TODO add stderr print on fail
+	// TODO make forks async
+    // TODO break up this function
 
     // Create pipe FDs
     int fds[2];
@@ -122,12 +124,21 @@ static int dynamic_execute_command(const char *cmd, char **output, int index)
     *output = strdup(vec.items);
     char_vector_free(&vec);
 
-    // TODO fail ignore enable
     if (status != 0)
     {
-        snprintf(g_log_buffer, LOG_BUFFER_SIZE, 
-            "Dynamic command %d (pid: %d) failed with exit code: %d (ignored)\n", index, pid, status);
-        log_error(g_log_buffer);
+        if (g_server_config.ignore_dynamic_errors)
+        {
+            snprintf(g_log_buffer, LOG_BUFFER_SIZE, 
+                "Dynamic command %d (pid: %d) failed with exit code: %d (ignored)\n", index, pid, status);
+            log_error(g_log_buffer);
+        }
+        else
+        {
+            snprintf(g_log_buffer, LOG_BUFFER_SIZE, 
+                "Dynamic command %d (pid: %d) failed with exit code: %d\n", index, pid, status);
+            log_error(g_log_buffer);
+            return 1;
+        }
     }
     
     return 0;

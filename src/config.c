@@ -44,6 +44,10 @@ static char* config_resolve_path(char *path)
 
 void config_load(ServerConfig *config) 
 {
+    // Setup default configs
+    config->dynamic_timeout = DEFAULT_DYNAMIC_TIMEOUT;
+    config->request_timeout_ms = DEFAULT_REQUEST_TIMEOUT;
+
     // Open the configuration file (at this point we know it exists)
     const char *file_path = (config->config_file) ? config->config_file : "ssfhs.conf";
     FILE *config_file = fopen(file_path, "r");
@@ -213,7 +217,35 @@ void config_load(ServerConfig *config)
             string_array_add(&config->protected_files, config->request_file);
         }
 
-        // TODO add parameters: receive timeout, dynamic command timeout, dynamic error ignore
+        else if (strcmp(key, "REQUEST_TIMEOUT") == 0)
+        {
+            int timeout = atoi(value);
+            if (!timeout)
+            {
+                fprintf(stderr, "Invalid request timeout: %s\n", value);
+                exit(EXIT_FAILURE);
+            }
+            config->request_timeout_ms = timeout;
+        }
+
+        else if (strcmp(key, "DYNAMIC_TIMEOUT") == 0)
+        {
+            int timeout = atoi(value);
+            if (!timeout)
+            {
+                fprintf(stderr, "Invalid dynamic timeout: %s\n", value);
+                exit(EXIT_FAILURE);
+            }
+            config->dynamic_timeout = timeout;
+        }
+
+        else if (strcmp(key, "IGNORE_DYNAMIC_ERRORS") == 0)
+        {
+            if (!strcmp(value, "t"))
+            {
+                config->ignore_dynamic_errors = true;
+            }
+        }
 
         else
         {
@@ -252,6 +284,9 @@ void config_load(ServerConfig *config)
         printf("    Protected files: %ld\n", config->protected_files.count);
         printf("    Dynamic files: %ld\n", config->dynamic_files.count);
         printf("    Request file: %s\n", config->request_file);
+        printf("    Request timeout: %dms\n", config->request_timeout_ms);
+        printf("    Dynamic timeout: %dms\n", config->dynamic_timeout);
+        printf("    Ignore dynamic errors: %s\n", config->ignore_dynamic_errors ? "true" : "false");
     }
 }
 

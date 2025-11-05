@@ -23,6 +23,9 @@
 #define DYNAMIC_TAG "sshfs-dyn"
 
 #define LOG_BUFFER_SIZE 4096
+#define RECEIVE_POLL_GRANULARITY_MS 50    // ms
+#define DEFAULT_REQUEST_TIMEOUT     5000  // ms
+#define DEFAULT_DYNAMIC_TIMEOUT     100   // ms
 
 //////////////////////////////////////////////////////////////////////////////
 //                            Data Structures                               //
@@ -60,6 +63,9 @@ void  char_vector_free(CharVector *vec);
 //  at the end
 char *strtrim(const char *str);
 
+// Returns current time in milliseconds (used for timeouts)
+uint64_t now_ms(void);
+
 //////////////////////////////////////////////////////////////////////////////
 //                      CLI Arguments & Config File                         //
 //////////////////////////////////////////////////////////////////////////////
@@ -81,6 +87,9 @@ typedef struct {
     char *not_found_page_file;
     char *server_error_page_file;
     char *request_file;
+    int request_timeout_ms;
+    int dynamic_timeout;
+    bool ignore_dynamic_errors;
 } ServerConfig;
 
 void cli_args_parse(ServerConfig *config, int argc, const char **argv);

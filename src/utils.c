@@ -8,6 +8,7 @@
  * 
  */
 #include <ctype.h>
+#include <time.h>
 #include <string.h>
 #include <stdlib.h>
 #include "ssfhs.h"
@@ -153,4 +154,15 @@ char *strtrim(const char *str)
     // free(str);
 
     return newstr;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//                                  Time                                    //
+//////////////////////////////////////////////////////////////////////////////
+
+uint64_t now_ms(void) 
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (long long)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
 }
