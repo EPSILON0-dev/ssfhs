@@ -8,10 +8,13 @@
  * 
  */
 #include <errno.h>
+#include <signal.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <poll.h>
+#include <fcntl.h>
 #include <sys/wait.h>
 #include "ssfhs.h"
 
@@ -53,102 +56,219 @@ static int dynamic_extract_commands(const CharVector *vec, StringArray *dyncmds)
     return 0;
 }
 
-static int dynamic_execute_command(const char *cmd, char **output, int index)
+static int dynamic_open_pipes(DynamicSubprocesses *dsp)
 {
-    // TODO add timeout
-    // TODO set cwd to root dir
-    // TODO add stderr print on fail
-	// TODO make forks async
-    // TODO break up this function
-
-    // Create pipe FDs
-    int fds[2];
-    if (pipe(fds) == -1) {
-        log_error(0, "Failed to open pipe for dynamic command: %s\n", strerror(errno));
-        return 1;
-    }
-
-    // Create a fork and execute the command
-    pid_t pid = fork();
-    if (pid < 0)
+    for (int i = 0; i < dsp->count; i++)
     {
-        log_error(0, "Failed to fork for dynamic command: %s\n", strerror(errno));
-        close(fds[0]);
-        close(fds[1]);
-        return 1;
-    }
-
-    // Child process
-    if (!pid) 
-    {
-        close(fds[0]); // close read end
-        dup2(fds[1], STDOUT_FILENO);  // redirect stdout
-        close(fds[1]);
-
-        execl("/bin/sh", "sh", "-c", cmd, NULL);
-        _exit(127); // only reached if exec fails
-    }
-
-    if (g_server_config.debug)
-    {
-        printf("[Dynamic:Execute:%d] Created fork, PID: %d\n", index, pid);
-    }
-
-    // Read the output of the subprocess
-    CharVector vec;
-    char buf[1024];
-    ssize_t n;
-    char_vector_init(&vec, 2048);
-    close(fds[1]);
-    while ((n = read(fds[0], buf, sizeof(buf))) > 0)
-    {
-        char_vector_push_arr(&vec, buf, n);
-    }
-
-    // Get the status of the process
-    int status = 0;
-    close(fds[0]);
-    waitpid(pid, &status, 0);
-
-    if (g_server_config.debug)
-    {
-        printf("[Dynamic:Execute:%d] Process exited: %d\n", index, status);
-        printf("[Dynamic:Execute:%d] Got output: %s\n", index, vec.items);
-    }
-
-    // Copy the output to the outputs array
-    *output = strdup(vec.items);
-    char_vector_free(&vec);
-
-    if (status != 0)
-    {
-        if (g_server_config.ignore_dynamic_errors)
+        DynamicSubprocess *p = &dsp->processes[i];
+        int res1 = pipe(p->pipe_err_fd);
+        int res2 = pipe(p->pipe_out_fd);
+        if (res1 == -1 || res2 == -1) 
         {
-            log_error(0, "Dynamic command %d (pid: %d) failed with exit code: %d (ignored)\n",
-                index, pid, status);
-        }
-        else
-        {
-            log_error(0, "Dynamic command %d (pid: %d) failed with exit code: %d\n",
-                index, pid, status);
+            log_error(dsp->request_id, "Failed to open pipe for dynamic command: %s\n", 
+                strerror(errno));
             return 1;
         }
+
+        int flags_err = fcntl(p->pipe_err_fd[0], F_GETFL, 0);
+        fcntl(p->pipe_err_fd[0], F_SETFL, flags_err | O_NONBLOCK);
+        int flags_out = fcntl(p->pipe_out_fd[0], F_GETFL, 0);
+        fcntl(p->pipe_out_fd[0], F_SETFL, flags_out | O_NONBLOCK);
     }
-    
+
     return 0;
 }
 
-static int dynamic_execute_commands(const StringArray *cmds, char **outputs)
+static int dynamic_create_forks(DynamicSubprocesses *dsp)
 {
-    for (size_t i = 0; i < cmds->count; i++)
+    for (int index = 0; index < dsp->count; index++)
     {
-        if (dynamic_execute_command(cmds->items[i], &outputs[i], i + 1))
+        DynamicSubprocess *p = &dsp->processes[index];
+
+        p->pid = fork();
+        if (p->pid < 0)
         {
-            return 1;
+            log_error(dsp->request_id, "Failed to fork for dynamic command: %s\n", 
+                strerror(errno));
+            close(p->pipe_out_fd[0]);
+            close(p->pipe_out_fd[1]);
+            close(p->pipe_err_fd[0]);
+            close(p->pipe_err_fd[1]);
+            p->status = -1;
+            continue;
+        }
+
+        char_vector_init(&p->out_vec, 2048);
+        char_vector_init(&p->err_vec, 2048);
+
+        if (!p->pid) 
+        {
+            close(p->pipe_out_fd[0]); // close read end
+            close(p->pipe_err_fd[0]); // close reaprocesses[i].d end
+            dup2(p->pipe_out_fd[1], STDOUT_FILENO);  // redirect stdout
+            dup2(p->pipe_err_fd[1], STDERR_FILENO);  // redirect stderr
+            close(p->pipe_out_fd[1]);
+            close(p->pipe_err_fd[1]);
+
+            execl("/bin/sh", "sh", "-c", p->cmd, NULL);
+            _exit(127); // only reached if exec fails
+        }
+
+        if (g_server_config.debug)
+        {
+            printf("[Dynamic:Execute:%d] Created fork, PID: %d\n", index, p->pid);
         }
     }
 
     return 0;
+}
+
+static int dynamic_poll_pipes(DynamicSubprocesses *dsp)
+{
+    char buf[1024];
+    ssize_t n;
+
+    uint64_t start_ms = now_ms();
+    int completed_processes = 0;
+    while ((int)(now_ms() - start_ms) < g_server_config.dynamic_timeout)
+    {
+        for (int i = 0; i < dsp->count; i++)
+        {
+            DynamicSubprocess *p = &dsp->processes[i];
+
+            // Read the out pipe
+            while ((n = read(p->pipe_out_fd[0], buf, 1024)) > 0)
+            {
+                char_vector_push_arr(&p->out_vec, buf, n);
+            }
+
+            // Read the error pipe
+            while ((n = read(p->pipe_err_fd[0], buf, 1024)) > 0)
+            {
+                char_vector_push_arr(&p->out_vec, buf, n);
+            }
+
+            int status = 0;
+            int res = waitpid(p->pid, &status, WNOHANG);
+            if (res > 0)
+            {
+                completed_processes ++;
+            }
+        }
+
+        // Sleep for a bit before polling again
+        usleep(SUBPROCESS_POLL_GRANULARITY_MS * 1000);
+
+        if (completed_processes == dsp->count)
+        {
+            break;
+        }
+    }
+
+    return 0;
+}
+
+static int dynamic_check_exit_codes(DynamicSubprocesses *dsp)
+{
+    bool error = false;
+
+    for (int i = 0; i < dsp->count; i++)
+    {
+        DynamicSubprocess *p = &dsp->processes[i];
+
+        // Check if the process finished execution
+        int status = 0;
+        pid_t result = waitpid(p->pid, &status, WNOHANG);
+        if (result == 0)
+        {
+            log_error(dsp->request_id, "Dynamic command %d (pid: %d) did not finish in time and was killed.\n",
+                i, p->pid);
+            kill(p->pid, SIGKILL);
+            error = true;
+            continue;
+        }
+
+        // Check the exit code
+        if (status != 0)
+        {
+            if (g_server_config.ignore_dynamic_errors)
+            {
+                log_error(dsp->request_id, "Dynamic command %d (pid: %d) failed with exit code: %d (ignored)\n",
+                    i, p->pid, status);
+            }
+            else
+            {
+                log_error(dsp->request_id, "Dynamic command %d (pid: %d) failed with exit code: %d\n",
+                    i, p->pid, status);
+                error = true;
+            }
+        }
+
+        // Output the stderr of the command
+        if (p->err_vec.count > 0)
+        {
+            log_error(dsp->request_id, "[Dynamic:Execute:%d] (pid: %d) stderr: %s\n",
+                i, p->pid, p->err_vec.items);
+        }
+
+        if (g_server_config.debug)
+        {
+            printf("[Dynamic:Execute:%d] Process exited: %d\n", i, status);
+            printf("[Dynamic:Execute:%d] Got output: %s\n", i, p->out_vec.items);
+        }
+    }
+
+    return error;
+}
+
+static int dynamic_copy_outputs(DynamicSubprocesses *dsp, char **outputs)
+{
+    for (int i = 0; i < dsp->count; i++)
+    {
+        outputs[i] = strdup(dsp->processes[i].out_vec.items);
+    }
+    return 0;
+}
+
+static void dynamic_cleanup_processes(DynamicSubprocesses *dsp)
+{
+    for (int i = 0; i < dsp->count; i++)
+    {
+        DynamicSubprocess *p = &dsp->processes[i];
+        char_vector_free(&p->out_vec);
+        char_vector_free(&p->err_vec);
+        close(p->pipe_out_fd[0]);
+        close(p->pipe_out_fd[1]);
+        close(p->pipe_err_fd[0]);
+        close(p->pipe_err_fd[1]);
+    }
+    free(dsp->processes);
+}
+
+// TODO set cwd to root dir
+static int dynamic_execute_commands(int request_id, const StringArray *cmds, char **outputs)
+{
+    DynamicSubprocesses dsp;
+
+    size_t process_alloc_size = cmds->count * sizeof(DynamicSubprocess);
+    dsp.processes = malloc(process_alloc_size);
+    dsp.count = cmds->count;
+    dsp.request_id = request_id;
+    memset(dsp.processes, 0, cmds->count * sizeof(DynamicSubprocess));
+    for (size_t i = 0; i < cmds->count; i++)
+    {
+        dsp.processes[i].cmd = cmds->items[i];
+    }
+    
+    bool error =
+        dynamic_open_pipes(&dsp) ||
+        dynamic_create_forks(&dsp) ||
+        dynamic_poll_pipes(&dsp) ||
+        dynamic_check_exit_codes(&dsp) ||
+        dynamic_copy_outputs(&dsp, outputs);
+
+    dynamic_cleanup_processes(&dsp);
+    return error;
 }
 
 static int dynamic_extract_replace(const CharVector *in_vec, CharVector *out_vec, char **outputs)
@@ -189,7 +309,7 @@ static int dynamic_extract_replace(const CharVector *in_vec, CharVector *out_vec
 
 
 // Replaces the buffers (deallocates old ones and allocates new ones)
-int dynamic_process(void **buff, size_t *buffsz)
+int dynamic_process(int request_id, void **buff, size_t *buffsz)
 {
     // Copy the buffer into a vector
     CharVector vec;
@@ -202,9 +322,14 @@ int dynamic_process(void **buff, size_t *buffsz)
     dynamic_extract_commands(&vec, &dyncmds);
 
     // Execute the commands
+    bool exit_error = false;
     char **outputs = malloc(dyncmds.count * sizeof(char*));
     memset(outputs, 0, dyncmds.count * sizeof(char*));
-    dynamic_execute_commands(&dyncmds, outputs);
+    if (dynamic_execute_commands(request_id, &dyncmds, outputs))
+    {
+        exit_error = true;
+        goto exit;
+    }
 
     // Replace the tags with command outputs
     CharVector replvec;
@@ -215,8 +340,14 @@ int dynamic_process(void **buff, size_t *buffsz)
     free(*buff);
     *buff = replvec.items;
     *buffsz = replvec.count;
+
+    exit:
+    for (size_t i = 0; i < dyncmds.count; i++)
+    {
+        free(outputs[i]);
+    }
+    free(outputs);
     string_array_free(&dyncmds);
     char_vector_free(&vec);
-
-    return 0;
+    return exit_error;
 }

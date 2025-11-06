@@ -123,15 +123,32 @@ static int socket_receive_request(ConnectionDescriptor *cd, CharVector *request_
 
 static int socket_respond(ConnectionDescriptor *cd, HTTPRequest *request, CharVector *request_vec)
 {
+    // Generate filename
+    char fname_buf[1024];
+    snprintf(fname_buf, 1024 - 1, "%s_%d", g_server_config.request_file, cd->conn_id);
+    if (g_server_config.debug)
+    {
+        printf("[Socket:Respond] Created a file '%s' for request %d.\n",
+            fname_buf, cd->conn_id);
+    }
+
     // Store the request
-    int request_store_error = http_request_store(request_vec);
+    int request_store_error = http_request_store(fname_buf, request_vec);
 
     // Generate and send the response
     CharVector response;
     char_vector_init(&response, 16);
-    int status = http_response_generate(&response, request, request_store_error);
+    int status = http_response_generate(cd->conn_id, &response, request, request_store_error);
     socket_send_response(&response, cd);
     char_vector_free(&response);
+
+    // Delete the request file
+    unlink(fname_buf);
+    if (g_server_config.debug)
+    {
+        printf("[Socket:Respond] Deleted the file '%s' for request %d.\n",
+            fname_buf, cd->conn_id);
+    }
 
     // Print log
     char ipstr[64];
@@ -172,6 +189,12 @@ static int socket_handle_connection(ConnectionDescriptor *cd)
     return exit_code;
 }
 
+static void* socket_handle_connection_thread(void *arg)
+{
+    socket_handle_connection((ConnectionDescriptor*)(arg));
+    return NULL;
+}
+
 int socket_accept_connection(int listen_fd)
 {
     static int conn_id = 0;
@@ -192,5 +215,24 @@ int socket_accept_connection(int listen_fd)
     cd->conn_fd = conn_fd;
     memcpy(&cd->cliaddr, &cliaddr, sizeof(struct sockaddr_storage));
 
-    return socket_handle_connection(cd);
+    // Create a thread for the new connection
+    pthread_t tid;
+    int res = pthread_create(&tid, NULL, socket_handle_connection_thread, cd);
+    pthread_detach(tid);
+
+    if (!res)
+    {
+        if (g_server_config.debug)
+        {
+            printf("[Socket:Accept] Created a thread for connection %d, tid: %ld\n",
+                conn_id, tid);
+        }
+    }
+    else
+    {
+        log_error(conn_id, "Failed to create a thread for connection %d, err: %d\n",
+            conn_id, res);
+    }
+
+    return 0;
 }

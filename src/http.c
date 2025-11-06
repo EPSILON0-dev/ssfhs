@@ -84,10 +84,10 @@ bool http_got_whole_request(const CharVector *vec)
     }
 }
 
-int http_request_store(const CharVector *vec)
+int http_request_store(const char *filename, const CharVector *vec)
 {
     bool request_store_error = false;
-    FILE *rf = fopen(g_server_config.request_file, "w");
+    FILE *rf = fopen(filename, "w");
     if (!rf) 
     { 
         request_store_error = true;
@@ -220,7 +220,7 @@ int http_request_parse(const CharVector *vec, HTTPRequest *request)
 //                        Response Generation                               //
 //////////////////////////////////////////////////////////////////////////////
 
-static int http_response_generate_internal(CharVector *vec, const char *status, const char *path)
+static int http_response_generate_internal(int request_id, CharVector *vec, const char *status, const char *path)
 {
     char buffer[128];
 
@@ -230,7 +230,7 @@ static int http_response_generate_internal(CharVector *vec, const char *status, 
     char *res_type;
     if (path != NULL)
     {
-        int result = resource_get(&res_buff, &res_size, path);
+        int result = resource_get(request_id, &res_buff, &res_size, path);
         res_type = resource_get_content_type(path);
         if (result) { return 1; }
     }
@@ -279,51 +279,51 @@ static int http_response_generate_internal(CharVector *vec, const char *status, 
     return 0;
 }
 
-static void http_response_generate_bad_request(CharVector *vec)
+static void http_response_generate_bad_request(int request_id, CharVector *vec)
 {
-    http_response_generate_internal(vec,
+    http_response_generate_internal(request_id, vec,
         "400 Bad Request",
         g_server_config.bad_request_page_file
     );
 }
 
-static void http_response_generate_not_found(CharVector *vec)
+static void http_response_generate_not_found(int request_id, CharVector *vec)
 {
-    http_response_generate_internal(vec,
+    http_response_generate_internal(request_id, vec,
         "404 Not Found",
         g_server_config.not_found_page_file
     );
 }
 
-static void http_response_generate_forbidden(CharVector *vec)
+static void http_response_generate_forbidden(int request_id, CharVector *vec)
 {
-    http_response_generate_internal(vec,
+    http_response_generate_internal(request_id, vec,
         "403 Forbidden",
         g_server_config.forbidden_page_file
     );
 }
 
-static void http_response_generate_server_error(CharVector *vec)
+static void http_response_generate_server_error(int request_id, CharVector *vec)
 {
-    http_response_generate_internal(vec,
+    http_response_generate_internal(request_id, vec,
         "500 Internal Server Error",
         g_server_config.server_error_page_file
     );
 }
 
-int http_response_generate(CharVector *response, HTTPRequest *request, bool force_error)
+int http_response_generate(int request_id, CharVector *response, HTTPRequest *request, bool force_error)
 {
     // If an error was forced, generate internal server error 
     if (force_error)
     {
-        http_response_generate_server_error(response);
+        http_response_generate_server_error(request_id, response);
         return 500;
     }
 
     // If the request wasn't parsed correctly, return 400 Bad Request
     if (!request->okay)
     {
-        http_response_generate_bad_request(response);
+        http_response_generate_bad_request(request_id, response);
         return 400;
     }
 
@@ -342,7 +342,7 @@ int http_response_generate(CharVector *response, HTTPRequest *request, bool forc
     if (!resolved_path || !resource_is_accessible(resolved_path))
     {
         if (resolved_path) { free(resolved_path); }
-        http_response_generate_not_found(response);
+        http_response_generate_not_found(request_id, response);
         return 404;
     }
 
@@ -350,7 +350,7 @@ int http_response_generate(CharVector *response, HTTPRequest *request, bool forc
     if (resource_is_protected(resolved_path))
     {
         free(resolved_path);
-        http_response_generate_forbidden(response);
+        http_response_generate_forbidden(request_id, response);
         return 403;
     }
 
@@ -361,9 +361,9 @@ int http_response_generate(CharVector *response, HTTPRequest *request, bool forc
     }
 
     // Try to return the resource, if that fails return 500, if that fails return empty 500 code
-    if (http_response_generate_internal(response, "200 OK", resolved_path))
+    if (http_response_generate_internal(request_id, response, "200 OK", resolved_path))
     {
-        http_response_generate_server_error(response);
+        http_response_generate_server_error(request_id, response);
         return 500;
     }
 

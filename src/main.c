@@ -22,3 +22,5 @@ int main(int argc, char **argv)
     config_free(&g_server_config);
     return EXIT_SUCCESS;
 }
+
+// TODO add on exit handler

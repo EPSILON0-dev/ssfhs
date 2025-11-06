@@ -9,7 +9,7 @@ COMMON_FLAGS=-Wall -Wextra -Wpedantic -lpthread
 ifeq ($(BUILD_MODE),RELEASE)
 	FLAGS=-O2 $(COMMON_FLAGS)
 else
-	FLAGS=-O0 -g -fsanitize=undefined -fsanitize=address $(COMMON_FLAGS)
+	FLAGS=-O0 -g $(COMMON_FLAGS) -fsanitize=undefined -fsanitize=address 
 endif
 
 SRCS = src/args.c \

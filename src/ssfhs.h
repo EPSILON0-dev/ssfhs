@@ -23,9 +23,10 @@
 
 #define DYNAMIC_TAG "sshfs-dyn"
 
-#define RECEIVE_POLL_GRANULARITY_MS 50    // ms
-#define DEFAULT_REQUEST_TIMEOUT     5000  // ms
-#define DEFAULT_DYNAMIC_TIMEOUT     100   // ms
+#define RECEIVE_POLL_GRANULARITY_MS    50     // ms
+#define SUBPROCESS_POLL_GRANULARITY_MS 5      // ms
+#define DEFAULT_REQUEST_TIMEOUT        5000   // ms
+#define DEFAULT_DYNAMIC_TIMEOUT        100    // ms
 
 //////////////////////////////////////////////////////////////////////////////
 //                            Data Structures                               //
@@ -133,11 +134,11 @@ typedef struct {
 } HTTPRequest;
 
 bool http_got_whole_request(const CharVector *vec);
-int http_request_store(const CharVector *vec);
+int http_request_store(const char *filename, const CharVector *vec);
 void http_request_init(HTTPRequest *request);
 int http_request_parse(const CharVector *vec, HTTPRequest *request);
 void http_request_free(HTTPRequest *request);
-int http_response_generate(CharVector *response, HTTPRequest *request, bool force_error);
+int http_response_generate(int request_id, CharVector *response, HTTPRequest *request, bool force_error);
 
 //////////////////////////////////////////////////////////////////////////////
 //                              Resource                                    //
@@ -148,13 +149,29 @@ bool resource_is_accessible(const char *path);
 bool resource_is_protected(const char *path);
 bool resource_is_dynamic(const char *path);
 char* resource_get_content_type(const char *path);
-int resource_get(void **buff, size_t *buffsz, const char *path);
+int resource_get(int request_id, void **buff, size_t *buffsz, const char *path);
 
 //////////////////////////////////////////////////////////////////////////////
 //                          Dynamic Resource                                //
 //////////////////////////////////////////////////////////////////////////////
 
-int dynamic_process(void **buff, size_t *buffsz);
+typedef struct {
+    CharVector out_vec;
+    CharVector err_vec;
+    const char *cmd;
+    int pipe_out_fd[2];
+    int pipe_err_fd[2];
+    pid_t pid;
+    int status;
+} DynamicSubprocess;
+
+typedef struct {
+    DynamicSubprocess *processes;
+    int count;
+    int request_id;
+} DynamicSubprocesses;
+
+int dynamic_process(int request_id, void **buff, size_t *buffsz);
 
 //////////////////////////////////////////////////////////////////////////////
 //                           Global Variables                               //
