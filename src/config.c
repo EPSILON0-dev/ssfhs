@@ -15,7 +15,7 @@
 
 static char* config_resolve_path_raw(char *path)
 {
-    // Get the directiory of the config file
+    // Get the directory of the config file
     char *sep = strrchr(g_server_config.config_file, '/');
     if (!sep) { return NULL; }
     int len = sep - g_server_config.config_file + 1;  // +1 for separator
@@ -23,7 +23,7 @@ static char* config_resolve_path_raw(char *path)
     memcpy(dir, g_server_config.config_file, len);
     dir[len] = '\0';
 
-    // Concateate and resolve the path
+    // Concatenate and resolve the path
     char *raw_path = malloc(strlen(dir) + strlen(path) + 1);
     memcpy(raw_path, dir, strlen(dir));
     memcpy(raw_path + strlen(dir), path, strlen(path));
@@ -99,7 +99,7 @@ void config_load(ServerConfig *config)
         key[key_len] = '\0';
 
         // Create a copy of the value after the token
-        //  -1 for the seperator
+        //  -1 for the separator
         int val_len = line_len - key_len - 1;
         // If we have a newline also -1
         if (sep_ptr[val_len] == '\n') { val_len--; }

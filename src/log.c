@@ -15,6 +15,9 @@
 
 static char header_buffer[64];
 
+// TODO Semaphore lock the file for print duration
+// TODO Add another field -- thread id
+
 static void log_generate_header(int conn_id)
 {
     // Generate the date header
@@ -25,7 +28,6 @@ static void log_generate_header(int conn_id)
     snprintf(&header_buffer[len], 64 - len, "[%d] ", conn_id);
 }
 
-// TODO Semaphore lock the file for print duration
 void log_error(int conn_id, const char *format, ...)
 {
     log_generate_header(conn_id);

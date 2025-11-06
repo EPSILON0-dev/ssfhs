@@ -21,6 +21,12 @@ bool http_got_whole_request(const CharVector *vec)
 {
     bool found_header_end = false;
 
+    if (!vec->items)
+    {
+        printf("No items???\n");
+        return false;
+    }
+
     // Check if there's content length in the request
     char *cl_ptr = strstr(vec->items, "Content-Length");
 
@@ -29,6 +35,7 @@ bool http_got_whole_request(const CharVector *vec)
     {
         // Find the end of the line
         const char *lf_ptr = strchr(ptr, '\n');
+        if (!lf_ptr) { return false; }
 
         // Check if the line is 1 char long and only contains CR
         //  We don't count LF into the line length
@@ -49,6 +56,7 @@ bool http_got_whole_request(const CharVector *vec)
     {
         char *len_start = strchr(cl_ptr, ':');
         char *len_end = strchr(cl_ptr, '\r');
+        if (!len_start || !len_end) { return false; }
 
         char *len_str_raw = char_vector_get_alloc(vec, 
             len_start - vec->items + 1, len_end - len_start - 1);
@@ -218,11 +226,11 @@ static int http_response_generate_internal(CharVector *vec, const char *status, 
 
     // Get the resource
     void *res_buff;
-    size_t res_buffsz;
+    size_t res_size;
     char *res_type;
     if (path != NULL)
     {
-        int result = resource_get(&res_buff, &res_buffsz, path);
+        int result = resource_get(&res_buff, &res_size, path);
         res_type = resource_get_content_type(path);
         if (result) { return 1; }
     }
@@ -247,7 +255,7 @@ static int http_response_generate_internal(CharVector *vec, const char *status, 
     if (path != NULL)
     {
         // Generate content length header
-        snprintf(buffer, sizeof(buffer) - 1, "Content-Length: %ld\r\n", res_buffsz);
+        snprintf(buffer, sizeof(buffer) - 1, "Content-Length: %ld\r\n", res_size);
         char_vector_push_arr(vec, buffer, strlen(buffer));
 
         // Generate content type header
@@ -263,7 +271,7 @@ static int http_response_generate_internal(CharVector *vec, const char *status, 
     if (path != NULL)
     {
         // Add the message at the end
-        char_vector_push_arr(vec, res_buff, res_buffsz);
+        char_vector_push_arr(vec, res_buff, res_size);
         free(res_type);
         free(res_buff);
     }

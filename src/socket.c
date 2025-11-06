@@ -19,6 +19,8 @@
 #include <pthread.h>
 #include "ssfhs.h"
 
+// TODO: Use thread pool instead of creating a new thread for each connection
+
 int socket_open(uint16_t port)
 {
     int fd;
@@ -170,12 +172,6 @@ static int socket_handle_connection(ConnectionDescriptor *cd)
     return exit_code;
 }
 
-static void* socket_handle_thread(void *arg)
-{
-    socket_handle_connection((ConnectionDescriptor*)(arg));
-    return NULL;
-}
-
 int socket_accept_connection(int listen_fd)
 {
     static int conn_id = 0;
@@ -196,9 +192,5 @@ int socket_accept_connection(int listen_fd)
     cd->conn_fd = conn_fd;
     memcpy(&cd->cliaddr, &cliaddr, sizeof(struct sockaddr_storage));
 
-    // Kick this out to a new thread
-    pthread_t tid;
-    pthread_create(&tid, NULL, socket_handle_thread, cd);
-    pthread_detach(tid);
-    return 0;
+    return socket_handle_connection(cd);
 }

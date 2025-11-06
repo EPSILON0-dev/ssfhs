@@ -39,10 +39,10 @@ void cli_args_parse(ServerConfig *config, int argc, const char **argv)
     config->log_file = NULL;
 
     // Parse the arguments
-    int argi = 1;
-    while (argi < argc) 
+    int arg_index = 1;
+    while (arg_index < argc) 
     {
-        const char *arg = argv[argi];
+        const char *arg = argv[arg_index];
 
         // Help
         if (strcmp(arg, "--help") == 0 || strcmp(arg, "-h") == 0) 
@@ -53,47 +53,47 @@ void cli_args_parse(ServerConfig *config, int argc, const char **argv)
         // Listen port
         else if (strcmp(arg, "--port") == 0 || strcmp(arg, "-p") == 0) 
         {
-            if (argi == argc - 1)
+            if (arg_index == argc - 1)
             {
                 fprintf(stderr, "Missing argument for --port\n");
                 exit(EXIT_FAILURE);
             }
 
-            int port = atoi(argv[argi + 1]);
+            int port = atoi(argv[arg_index + 1]);
             if (port <= 0 || port > 65535)
             {
-                fprintf(stderr, "Invalid port number: %s\n", argv[argi + 1]);
+                fprintf(stderr, "Invalid port number: %s\n", argv[arg_index + 1]);
                 exit(EXIT_FAILURE);
             }
 
             config->port = port;
-            argi += 2;
+            arg_index += 2;
         }
 
         // Log file
         else if (strcmp(arg, "--log-file") == 0 || strcmp(arg, "-l") == 0) 
         {
-            if (argi == argc - 1)
+            if (arg_index == argc - 1)
             {
                 fprintf(stderr, "Missing argument for --log-file\n");
                 exit(EXIT_FAILURE);
             }
 
-            config->log_file = strdup(argv[argi + 1]);
-            argi += 2;
+            config->log_file = strdup(argv[arg_index + 1]);
+            arg_index += 2;
         }
 
         // Config file
         else if (strcmp(arg, "--config-file") == 0 || strcmp(arg, "-c") == 0) 
         {
-            if (argi == argc - 1)
+            if (arg_index == argc - 1)
             {
                 fprintf(stderr, "Missing argument for --config-file\n");
                 exit(EXIT_FAILURE);
             }
 
-            config->config_file = strdup(argv[argi + 1]);
-            argi += 2;
+            config->config_file = strdup(argv[arg_index + 1]);
+            arg_index += 2;
 
 
             if (access(config->config_file, F_OK) != 0)
@@ -106,14 +106,14 @@ void cli_args_parse(ServerConfig *config, int argc, const char **argv)
         // Config file
         else if (strcmp(arg, "--root-dir") == 0 || strcmp(arg, "-d") == 0) 
         {
-            if (argi == argc - 1)
+            if (arg_index == argc - 1)
             {
                 fprintf(stderr, "Missing argument for --root-dir\n");
                 exit(EXIT_FAILURE);
             }
 
-            config->root_dir = strdup(argv[argi + 1]);
-            argi += 2;
+            config->root_dir = strdup(argv[arg_index + 1]);
+            arg_index += 2;
 
             if (access(config->root_dir, F_OK) != 0)
             {
@@ -126,7 +126,7 @@ void cli_args_parse(ServerConfig *config, int argc, const char **argv)
         else if (strcmp(arg, "--debug") == 0 || strcmp(arg, "-v") == 0) 
         {
             config->debug = true;
-            argi += 1;
+            arg_index += 1;
         }
 
         else 
