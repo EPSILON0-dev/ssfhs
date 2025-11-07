@@ -153,7 +153,9 @@ static int socket_respond(ConnectionDescriptor *cd, HTTPRequest *request, CharVe
     // Print log
     char ipstr[64];
     socket_generate_ip_string(ipstr, sizeof(ipstr) - 1, &cd->cliaddr);
-    log_message(cd->conn_id, "%s %s %s %d\n", ipstr, request->method, request->url, status);
+    log_message(cd->conn_id, "%s %s %s %d %.1fms\n", 
+        ipstr, request->method, request->url, status, 
+        (float)(now_us() - cd->start_us) / 1000.0);
 
     return 0;
 }
@@ -213,6 +215,7 @@ int socket_accept_connection(int listen_fd)
     ConnectionDescriptor *cd = malloc(sizeof(ConnectionDescriptor));
     cd->conn_id = conn_id;
     cd->conn_fd = conn_fd;
+    cd->start_us = now_us();
     memcpy(&cd->cliaddr, &cliaddr, sizeof(struct sockaddr_storage));
 
     // Create a thread for the new connection

@@ -13,67 +13,72 @@
 #include <stdarg.h>
 #include "ssfhs.h"
 
-static char header_buffer[64];
+static FILE *log_file = NULL;
 
-// TODO Semaphore lock the file for print duration
-
-static void log_generate_header(int conn_id)
+static void log_generate_header(char *log_buffer, int conn_id, bool error)
 {
-    // Generate the date header
     time_t now = time(NULL);
     struct tm *gmt = gmtime(&now);
-    strftime(header_buffer, sizeof(header_buffer) - 1, "[%a, %d %b %Y %H:%M:%S] ", gmt);
-    int len = strlen(header_buffer);
-    snprintf(&header_buffer[len], 64 - len, "[%d] ", conn_id);
+    strftime(log_buffer, LOG_BUFFER_SIZE - 1, "[%a, %d %b %Y %H:%M:%S] ", gmt);
+    int len = strlen(log_buffer);
+    snprintf(&log_buffer[len], LOG_BUFFER_SIZE - len, "[%d] %s: ", conn_id, 
+        error ? "ERR" : "OUT");
+}
+
+void log_open_file(void)
+{
+    if (g_server_config.log_file)
+    {
+        log_file = fopen(g_server_config.log_file, "a");
+        if (!log_file)
+        {
+            fprintf(stderr, "Could not open log file: %s\n", g_server_config.log_file);
+            fclose(log_file);
+            return;
+        }
+    }
+}
+
+void log_close_file(void)
+{
+    if (log_file)
+    {
+        fflush(log_file);
+        fclose(log_file);
+        log_file = NULL;
+    }
 }
 
 void log_error(int conn_id, const char *format, ...)
 {
-    log_generate_header(conn_id);
+    char log_buffer[LOG_BUFFER_SIZE];
+    log_generate_header(log_buffer, conn_id, true);
 
     va_list args;
-    
-    fputs(header_buffer, stderr);
-    fputs("ERR: ", stderr);
     va_start(args, format);
-    vfprintf(stderr, format, args);
+    vsnprintf(log_buffer + strlen(log_buffer), LOG_BUFFER_SIZE - strlen(log_buffer), format, args);
     va_end(args);
 
-    // Log to the file
+    fputs(log_buffer, stderr);
     if (g_server_config.log_file)
     {
-        FILE *f = fopen(g_server_config.log_file, "a");
-        fputs(header_buffer, f);
-        fputs("ERR: ", f);
-        va_start(args, format);
-        vfprintf(f, format, args);
-        va_end(args);
-        fclose(f);
+        fputs(log_buffer, log_file);
     }
 }
 
 void log_message(int conn_id, const char *format, ...)
 {
-    log_generate_header(conn_id);
+    char log_buffer[LOG_BUFFER_SIZE];
+    log_generate_header(log_buffer, conn_id, false);
 
     va_list args;
-    fputs(header_buffer, stdout);
-    fputs("OUT: ", stdout);
-    
     va_start(args, format);
-    vfprintf(stdout, format, args);
+    vsnprintf(log_buffer + strlen(log_buffer), LOG_BUFFER_SIZE - strlen(log_buffer), format, args);
     va_end(args);
 
-    // Log to the file
+    fputs(log_buffer, stdout);
     if (g_server_config.log_file)
     {
-        FILE *f = fopen(g_server_config.log_file, "a");
-        fputs(header_buffer, f);
-        fputs("OUT: ", f);
-        va_start(args, format);
-        vfprintf(f, format, args);
-        va_end(args);
-        fclose(f);
+        fputs(log_buffer, log_file);
     }
-
 }

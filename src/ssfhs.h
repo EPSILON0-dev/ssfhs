@@ -27,6 +27,7 @@
 #define SUBPROCESS_POLL_GRANULARITY_MS 5      // ms
 #define DEFAULT_REQUEST_TIMEOUT        5000   // ms
 #define DEFAULT_DYNAMIC_TIMEOUT        100    // ms
+#define LOG_BUFFER_SIZE                8192   // bytes
 
 //////////////////////////////////////////////////////////////////////////////
 //                            Data Structures                               //
@@ -67,6 +68,9 @@ char *strtrim(const char *str);
 // Returns current time in milliseconds (used for timeouts)
 uint64_t now_ms(void);
 
+// Returns current time in microseconds (used for time measurements)
+uint64_t now_us(void);
+
 //////////////////////////////////////////////////////////////////////////////
 //                      CLI Arguments & Config File                         //
 //////////////////////////////////////////////////////////////////////////////
@@ -102,6 +106,8 @@ void config_free(ServerConfig *config);
 //                               Logging                                    //
 //////////////////////////////////////////////////////////////////////////////
 
+void log_open_file(void);
+void log_close_file(void);
 void log_error(int conn_id, const char *format, ...);
 void log_message(int conn_id, const char *format, ...);
 
@@ -110,6 +116,7 @@ void log_message(int conn_id, const char *format, ...);
 //////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
+    uint64_t start_us;
     int conn_fd;
     int conn_id;
     struct sockaddr_storage cliaddr;

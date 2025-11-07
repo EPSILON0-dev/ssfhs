@@ -146,7 +146,6 @@ void config_load(ServerConfig *config)
             }
         }
 
-
         else if (strcmp(key, "400_PAGE") == 0)
         {
             config->bad_request_page_file = config_resolve_path(value);
@@ -194,20 +193,8 @@ void config_load(ServerConfig *config)
 
         else if (strcmp(key, "REQUEST_FILE") == 0)
         {
-            // Create the request file
-            char *raw_path = config_resolve_path_raw(value);
-            FILE *f = fopen(raw_path, "w");
-            if (!f)
-            {
-                fprintf(stderr, "Failed to create or open the request file: %s\n",
-                    strerror(errno));
-                exit(EXIT_FAILURE);
-            }
-            fclose(f);
-            free(raw_path);
-
             // Store the file path
-            config->request_file = config_resolve_path(value);
+            config->request_file = config_resolve_path_raw(value);
             if (config->debug)
             {
                 printf("[CONFIG] Request file path set to: %s\n", config->request_file);
@@ -288,6 +275,8 @@ void config_load(ServerConfig *config)
         printf("    Dynamic timeout: %dms\n", config->dynamic_timeout);
         printf("    Ignore dynamic errors: %s\n", config->ignore_dynamic_errors ? "true" : "false");
     }
+
+    fclose(config_file);
 }
 
 void config_free(ServerConfig *config)

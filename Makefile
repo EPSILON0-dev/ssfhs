@@ -2,12 +2,15 @@
 CC ?= cc
 
 BUILD_MODE=DEBUG
+# BUILD_MODE=NOASAN
 # BUILD_MODE=RELEASE
 
 COMMON_FLAGS=-Wall -Wextra -Wpedantic -lpthread
 
 ifeq ($(BUILD_MODE),RELEASE)
 	FLAGS=-O2 $(COMMON_FLAGS)
+else ifeq ($(BUILD_MODE),NOASAN)
+	FLAGS=-O0 -g $(COMMON_FLAGS)
 else
 	FLAGS=-O0 -g $(COMMON_FLAGS) -fsanitize=undefined -fsanitize=address 
 endif
