@@ -141,11 +141,10 @@ typedef struct {
 } HTTPRequest;
 
 bool http_got_whole_request(const CharVector *vec);
-int http_request_store(const char *filename, const CharVector *vec);
 void http_request_init(HTTPRequest *request);
 int http_request_parse(const CharVector *vec, HTTPRequest *request);
 void http_request_free(HTTPRequest *request);
-int http_response_generate(int request_id, CharVector *response, HTTPRequest *request, bool force_error);
+int http_response_generate(int request_id, CharVector *response, HTTPRequest *request, const char *request_str);
 
 //////////////////////////////////////////////////////////////////////////////
 //                              Resource                                    //
@@ -156,7 +155,7 @@ bool resource_is_accessible(const char *path);
 bool resource_is_protected(const char *path);
 bool resource_is_dynamic(const char *path);
 char* resource_get_content_type(const char *path);
-int resource_get(int request_id, void **buff, size_t *buffsz, const char *path);
+int resource_get(int request_id, void **buff, size_t *buffsz, const char *path, const char *request_str);
 
 //////////////////////////////////////////////////////////////////////////////
 //                          Dynamic Resource                                //
@@ -178,7 +177,7 @@ typedef struct {
     int request_id;
 } DynamicSubprocesses;
 
-int dynamic_process(int request_id, void **buff, size_t *buffsz);
+int dynamic_process(int request_id, void **buff, size_t *buffsz, const char *request_str);
 
 //////////////////////////////////////////////////////////////////////////////
 //                           Global Variables                               //

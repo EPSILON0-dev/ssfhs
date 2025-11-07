@@ -132,13 +132,10 @@ static int socket_respond(ConnectionDescriptor *cd, HTTPRequest *request, CharVe
             fname_buf, cd->conn_id);
     }
 
-    // Store the request
-    int request_store_error = http_request_store(fname_buf, request_vec);
-
     // Generate and send the response
     CharVector response;
     char_vector_init(&response, 16);
-    int status = http_response_generate(cd->conn_id, &response, request, request_store_error);
+    int status = http_response_generate(cd->conn_id, &response, request, request_vec->items);
     socket_send_response(&response, cd);
     char_vector_free(&response);
 

@@ -18,6 +18,7 @@
 #include <sys/wait.h>
 #include "ssfhs.h"
 
+extern char **environ;
 static const char *opening_tag = "<" DYNAMIC_TAG ">";
 static const char *closing_tag = "</" DYNAMIC_TAG ">";
 
@@ -56,6 +57,56 @@ static int dynamic_extract_commands(const CharVector *vec, StringArray *dyncmds)
     return 0;
 }
 
+static char** dynamic_generate_environment(int request_id, const char *request_str)
+{
+    char env_buf[512];
+    char **env = NULL;
+
+    // Compute the size of the parent environment
+    size_t penv_count = 0;
+    while (environ[penv_count] != NULL)
+    {
+        penv_count++;
+    }
+
+    // Allocate memory for the child environment
+    // +1 for the NULL terminator, +2 for ID and REQUEST_STR
+    env = malloc((penv_count + 3) * sizeof(char *));
+    if (!env) { return NULL; }
+
+    // Copy the parent environment
+    for (size_t i = 0; i < penv_count; i++)
+    {
+        // FIXME Override PWD to root dir
+        if (strncmp(environ[i], "PWD=", 4) == 0)
+        {
+            // Set PWD to root dir
+            snprintf(env_buf, sizeof(env_buf) - 1, "PWD=%s", g_server_config.root_dir);
+            env[i] = strdup(env_buf);
+        } 
+        else
+        {
+            env[i] = strdup(environ[i]);
+        }
+    }
+
+    // Add REQUEST_STR
+    const char *req_var_name = "REQUEST_STR";
+    char *req_str_buf = malloc(strlen(req_var_name) + strlen(request_str) + 2);
+    if (!req_str_buf) { return NULL; }
+    sprintf(req_str_buf, "%s=%s", req_var_name, request_str);
+    env[penv_count] = req_str_buf;
+
+    // Add REQUEST_ID
+    snprintf(env_buf, sizeof(env_buf) - 1, "REQUEST_ID=%d", request_id);
+    env[penv_count + 1] = strdup(env_buf);
+
+    // Add NULL terminator
+    env[penv_count + 2] = NULL;
+
+    return env;
+}
+
 static int dynamic_open_pipes(DynamicSubprocesses *dsp)
 {
     for (int i = 0; i < dsp->count; i++)
@@ -79,7 +130,7 @@ static int dynamic_open_pipes(DynamicSubprocesses *dsp)
     return 0;
 }
 
-static int dynamic_create_forks(DynamicSubprocesses *dsp)
+static int dynamic_create_forks(DynamicSubprocesses *dsp, char **child_environ)
 {
     for (int index = 0; index < dsp->count; index++)
     {
@@ -110,7 +161,7 @@ static int dynamic_create_forks(DynamicSubprocesses *dsp)
             close(p->pipe_out_fd[1]);
             close(p->pipe_err_fd[1]);
 
-            execl("/bin/sh", "sh", "-c", p->cmd, NULL);
+            execle("/bin/sh", "sh", "-c", p->cmd, NULL, child_environ);
             _exit(127); // only reached if exec fails
         }
 
@@ -245,8 +296,7 @@ static void dynamic_cleanup_processes(DynamicSubprocesses *dsp)
     free(dsp->processes);
 }
 
-// TODO set cwd to root dir
-static int dynamic_execute_commands(int request_id, const StringArray *cmds, char **outputs)
+static int dynamic_execute_commands(int request_id, const StringArray *cmds, char **outputs, const char *request_str)
 {
     DynamicSubprocesses dsp;
 
@@ -259,10 +309,12 @@ static int dynamic_execute_commands(int request_id, const StringArray *cmds, cha
     {
         dsp.processes[i].cmd = cmds->items[i];
     }
+
+    char **child_environ = dynamic_generate_environment(request_id, request_str);
     
     bool error =
         dynamic_open_pipes(&dsp) ||
-        dynamic_create_forks(&dsp) ||
+        dynamic_create_forks(&dsp, child_environ) ||
         dynamic_poll_pipes(&dsp) ||
         dynamic_check_exit_codes(&dsp) ||
         dynamic_copy_outputs(&dsp, outputs);
@@ -309,7 +361,7 @@ static int dynamic_extract_replace(const CharVector *in_vec, CharVector *out_vec
 
 
 // Replaces the buffers (deallocates old ones and allocates new ones)
-int dynamic_process(int request_id, void **buff, size_t *buffsz)
+int dynamic_process(int request_id, void **buff, size_t *buffsz, const char *request_str)
 {
     // Copy the buffer into a vector
     CharVector vec;
@@ -325,7 +377,7 @@ int dynamic_process(int request_id, void **buff, size_t *buffsz)
     bool exit_error = false;
     char **outputs = malloc(dyncmds.count * sizeof(char*));
     memset(outputs, 0, dyncmds.count * sizeof(char*));
-    if (dynamic_execute_commands(request_id, &dyncmds, outputs))
+    if (dynamic_execute_commands(request_id, &dyncmds, outputs, request_str))
     {
         exit_error = true;
         goto exit;

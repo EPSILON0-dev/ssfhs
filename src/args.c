@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include "ssfhs.h"
 
 static void print_help_and_exit(const char *prog_name)
@@ -112,14 +113,13 @@ void cli_args_parse(ServerConfig *config, int argc, const char **argv)
                 exit(EXIT_FAILURE);
             }
 
-            config->root_dir = strdup(argv[arg_index + 1]);
-            arg_index += 2;
-
-            if (access(config->root_dir, F_OK) != 0)
+            config->root_dir = realpath(argv[arg_index + 1], NULL);
+            if (!config->root_dir)
             {
-                fprintf(stderr, "Could not access root directory: %s\n", config->root_dir);
+                fprintf(stderr, "Could not resolve root directory: %s\n", strerror(errno));
                 exit(EXIT_FAILURE);
             }
+            arg_index += 2;
         }
 
         // Debug

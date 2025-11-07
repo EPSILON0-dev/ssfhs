@@ -3,8 +3,6 @@
 #include <signal.h>
 #include "ssfhs.h"
 
-// TODO RAMFS for storing requests
-
 ServerConfig g_server_config;
 static int listen_fd;
 

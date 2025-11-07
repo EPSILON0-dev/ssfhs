@@ -147,7 +147,7 @@ char* resource_get_content_type(const char *path)
     return strdup(default_type);
 }
 
-int resource_get(int request_id, void **buff, size_t *buffsz, const char *path)
+int resource_get(int request_id, void **buff, size_t *buffsz, const char *path, const char *request_str)
 {
     // Open the file
     FILE *f = fopen(path, "r");
@@ -172,7 +172,7 @@ int resource_get(int request_id, void **buff, size_t *buffsz, const char *path)
     // Process the file it it's a dynamic file
     if (resource_is_dynamic(path))
     {
-        if (dynamic_process(request_id, buff, buffsz))
+        if (dynamic_process(request_id, buff, buffsz, request_str))
         {
             log_error(0, "Something went wrong when processing dynamic resource\n");
             return 1;
