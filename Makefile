@@ -1,9 +1,9 @@
 # Simple makefile for building SSFHS
 CC ?= cc
 
-BUILD_MODE=DEBUG
+# BUILD_MODE=DEBUG
 # BUILD_MODE=NOASAN
-# BUILD_MODE=RELEASE
+BUILD_MODE=RELEASE
 
 COMMON_FLAGS=-Wall -Wextra -Wpedantic -lpthread
 
