@@ -21,7 +21,7 @@
 #define SERVER_NAME "SSFHS"
 #define SERVER_VERSION "v0.1"
 
-#define DYNAMIC_TAG "sshfs-dyn"
+#define DYNAMIC_TAG "ssfhs-dyn"
 
 #define RECEIVE_POLL_GRANULARITY_MS    50     // ms
 #define SUBPROCESS_POLL_GRANULARITY_MS 5      // ms

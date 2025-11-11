@@ -77,17 +77,7 @@ static char** dynamic_generate_environment(int request_id, const char *request_s
     // Copy the parent environment
     for (size_t i = 0; i < penv_count; i++)
     {
-        // FIXME Override PWD to root dir
-        if (strncmp(environ[i], "PWD=", 4) == 0)
-        {
-            // Set PWD to root dir
-            snprintf(env_buf, sizeof(env_buf) - 1, "PWD=%s", g_server_config.root_dir);
-            env[i] = strdup(env_buf);
-        } 
-        else
-        {
-            env[i] = strdup(environ[i]);
-        }
+        env[i] = strdup(environ[i]);
     }
 
     // Add REQUEST_STR
@@ -161,6 +151,8 @@ static int dynamic_create_forks(DynamicSubprocesses *dsp, char **child_environ)
             close(p->pipe_out_fd[1]);
             close(p->pipe_err_fd[1]);
 
+            // Change to server root dir
+            chdir(g_server_config.root_dir);
             execle("/bin/sh", "sh", "-c", p->cmd, NULL, child_environ);
             _exit(127); // only reached if exec fails
         }
@@ -351,6 +343,9 @@ static int dynamic_extract_replace(const CharVector *in_vec, CharVector *out_vec
         index ++;
     }
 
+    // Copy the remaining text
+    char_vector_push_arr(out_vec, ptr, strlen(ptr));
+
     if (g_server_config.debug)
     {
         printf("[DYNAMIC:Replace] Replaced %d dynamic tags.\n", index);
@@ -372,14 +367,6 @@ int dynamic_process(int request_id, void **buff, size_t *buffsz, const char *req
     StringArray dyncmds;
     string_array_init(&dyncmds);
     dynamic_extract_commands(&vec, &dyncmds);
-
-    // If no commands, nothing to do
-    if (dyncmds.count == 0)
-    {
-        char_vector_free(&vec);
-        string_array_free(&dyncmds);
-        return 0;
-    }
 
     // Execute the commands
     bool exit_error = false;

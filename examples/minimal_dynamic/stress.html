@@ -1,14 +1,14 @@
-<sshfs-dyn>date +'Current server time: %H:%M:%S' | head -c -1</sshfs-dyn>
+<ssfhs-dyn>date +'Current server time: %H:%M:%S' | head -c -1</ssfhs-dyn>
 <br>
-<sshfs-dyn>echo "Server CPU:" `cat /proc/cpuinfo | grep "model name" | head -1 | cut -d':' -f2 | xargs` | head -c -1</sshfs-dyn>
+<ssfhs-dyn>echo "Server CPU:" `cat /proc/cpuinfo | grep "model name" | head -1 | cut -d':' -f2 | xargs` | head -c -1</ssfhs-dyn>
 <br>
-<sshfs-dyn>
+<ssfhs-dyn>
     total=`cat /proc/meminfo | grep MemTotal | cut -d':' -f2 | xargs | cut -d' ' -f1`
     available=`cat /proc/meminfo | grep MemAvailable | cut -d':' -f2 | xargs | cut -d' ' -f1`
     printf "Server RAM: "
     printf "`echo "scale=1; u = ($total - $available); u / 1024 / 1024" | bc`/"
     printf "`echo "scale=1; t = ($total); t / 1024 / 1024" | bc`GB"
-</sshfs-dyn>
+</ssfhs-dyn>
 <br>
-<sshfs-dyn>printf "Uptime: %ss" `cat /proc/uptime | cut -d' ' -f1 | xargs`</sshfs-dyn>
+<ssfhs-dyn>printf "Uptime: %ss" `cat /proc/uptime | cut -d' ' -f1 | xargs`</ssfhs-dyn>
 <br>
