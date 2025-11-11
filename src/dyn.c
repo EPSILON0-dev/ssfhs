@@ -368,10 +368,18 @@ int dynamic_process(int request_id, void **buff, size_t *buffsz, const char *req
     char_vector_init(&vec, *buffsz + 1);
     char_vector_push_arr(&vec, *buff, *buffsz);
 
-    // Exctract the commands
+    // Extract the commands
     StringArray dyncmds;
     string_array_init(&dyncmds);
     dynamic_extract_commands(&vec, &dyncmds);
+
+    // If no commands, nothing to do
+    if (dyncmds.count == 0)
+    {
+        char_vector_free(&vec);
+        string_array_free(&dyncmds);
+        return 0;
+    }
 
     // Execute the commands
     bool exit_error = false;
