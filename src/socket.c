@@ -123,29 +123,12 @@ static int socket_receive_request(ConnectionDescriptor *cd, CharVector *request_
 
 static int socket_respond(ConnectionDescriptor *cd, HTTPRequest *request, CharVector *request_vec)
 {
-    // Generate filename
-    char fname_buf[1024];
-    snprintf(fname_buf, 1024 - 1, "%s_%d", g_server_config.request_file, cd->conn_id);
-    if (g_server_config.debug)
-    {
-        printf("[Socket:Respond] Created a file '%s' for request %d.\n",
-            fname_buf, cd->conn_id);
-    }
-
     // Generate and send the response
     CharVector response;
     char_vector_init(&response, 16);
     int status = http_response_generate(cd->conn_id, &response, request, request_vec->items);
     socket_send_response(&response, cd);
     char_vector_free(&response);
-
-    // Delete the request file
-    unlink(fname_buf);
-    if (g_server_config.debug)
-    {
-        printf("[Socket:Respond] Deleted the file '%s' for request %d.\n",
-            fname_buf, cd->conn_id);
-    }
 
     // Print log
     char ipstr[64];

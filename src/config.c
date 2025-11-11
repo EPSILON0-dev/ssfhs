@@ -191,19 +191,6 @@ void config_load(ServerConfig *config)
             }
         }
 
-        else if (strcmp(key, "REQUEST_FILE") == 0)
-        {
-            // Store the file path
-            config->request_file = config_resolve_path_raw(value);
-            if (config->debug)
-            {
-                printf("[CONFIG] Request file path set to: %s\n", config->request_file);
-            }
-
-            // We also have to protect that file
-            string_array_add(&config->protected_files, config->request_file);
-        }
-
         else if (strcmp(key, "REQUEST_TIMEOUT") == 0)
         {
             int timeout = atoi(value);
@@ -251,11 +238,6 @@ void config_load(ServerConfig *config)
         }
     }
 
-    if (config->dynamic_files.count && !config->request_file)
-    {
-        fprintf(stderr, "WARN: Dynamic files defined, but no request file location specified.\n");
-    }
-
     // Print debug info
     if (config->debug)
     {
@@ -270,7 +252,6 @@ void config_load(ServerConfig *config)
         printf("    500 page: %s\n", config->server_error_page_file);
         printf("    Protected files: %ld\n", config->protected_files.count);
         printf("    Dynamic files: %ld\n", config->dynamic_files.count);
-        printf("    Request file: %s\n", config->request_file);
         printf("    Request timeout: %dms\n", config->request_timeout_ms);
         printf("    Dynamic timeout: %dms\n", config->dynamic_timeout);
         printf("    Ignore dynamic errors: %s\n", config->ignore_dynamic_errors ? "true" : "false");
@@ -292,7 +273,6 @@ void config_free(ServerConfig *config)
     if (config->forbidden_page_file) { free(config->forbidden_page_file); }
     if (config->not_found_page_file) { free(config->not_found_page_file); }
     if (config->server_error_page_file) { free(config->server_error_page_file); }
-    if (config->request_file) { free(config->request_file); }
     string_array_free(&config->protected_files);
     string_array_free(&config->dynamic_files);
 }

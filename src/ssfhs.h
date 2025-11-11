@@ -91,7 +91,6 @@ typedef struct {
     char *forbidden_page_file;
     char *not_found_page_file;
     char *server_error_page_file;
-    char *request_file;
     int request_timeout_ms;
     int dynamic_timeout;
     bool ignore_dynamic_errors;
