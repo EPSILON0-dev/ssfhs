@@ -7,6 +7,19 @@
   --muted: rgba(255,255,255,0.75);
 }
 
+
+a.error-link {
+  color: var(--miku-light);
+  text-decoration: none;
+  font-weight: 700;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+a.error-link:hover {
+  color: #ffd700;
+  text-shadow: 0 0 8px #ffd700;
+}
+
 html,body{
   height:100%;
   margin:0;

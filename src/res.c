@@ -182,7 +182,5 @@ int resource_get(int request_id, void **buff, size_t *buffsz, const char *path, 
         }
     }
 
-    printf("%.*s", (int)*buffsz, (char *)*buff);
-
     return 0;
 }
