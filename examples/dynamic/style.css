@@ -221,28 +221,33 @@ a.test-link:hover, button.test-btn:hover {
 
 .message-board button {
   margin-top: 8px;
-  padding: 10px 20px;
-  border-radius: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
   border: none;
-  background: var(--miku-mid);
+  background: rgba(255,255,255,0.12);
   color: #fff;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease;
+  font-family: inherit;
+  font-size: 0.95rem;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+  outline: none;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .message-board button:hover {
   background: var(--accent);
+  box-shadow: inset 0 0 8px rgba(111,231,214,0.8);
 }
 
-.dynamic-tests-form {
+.dynamic-tests-form, .message-board-form {
   display: flex;
   gap: 8px;
   align-items: center;
   margin-top: 1rem;
 }
 
-.dynamic-tests-input {
+.dynamic-tests-input, .message-board-input {
   flex-grow: 1;
   padding: 10px;
   border-radius: 8px;
@@ -254,9 +259,9 @@ a.test-link:hover, button.test-btn:hover {
   box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
 }
 
-.dynamic-tests-button {
-  width: 48px;
-  height: 48px;
+.submit-button {
+  width: 40px;
+  height: 40px;
   border-radius: 8px;
   border: none;
   background: var(--miku-mid);
@@ -266,7 +271,7 @@ a.test-link:hover, button.test-btn:hover {
   transition: background 0.2s ease;
 }
 
-.dynamic-tests-button:hover {
+.submit-button:hover {
   background: var(--accent);
 }
 
