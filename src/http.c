@@ -112,6 +112,10 @@ static int http_request_parse_1st_line(const CharVector *vec, HTTPRequest *reque
     request->url = char_vector_get_alloc(vec, *ptr - vec->items, url_len);
     if (!request->url) { return 1; }
 
+    // If there's a query string, place a null terminator there
+    char *query_start = strchr(request->url, '?');
+    if (query_start) { *query_start = '\0'; }
+
     *ptr += url_len + 1;
     if (g_server_config.debug) 
     {

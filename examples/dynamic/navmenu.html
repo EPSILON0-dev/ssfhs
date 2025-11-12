@@ -1,4 +1,4 @@
-<nav role="navigation" aria-label="Main navigation">
+<nav role="navigation" aria-label="Main navigation" id="navmenu">
   <a href="index.html" title="Landing page">🏠 Landing</a>
   <a href="features.html" title="Features page">✨ Features</a>
   <a href="dynamic-tests.html" title="Dynamic tests page">🧪 Dynamic Tests</a>
@@ -6,3 +6,28 @@
   <a href="error-handling.html" title="Error handling page">⚠️ Error Handling</a>
   <a href="message-board.html" title="Message board">💬 Message Board</a>
 </nav>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const nav = document.getElementById("navmenu");
+    if (!nav) return;
+    const links = nav.querySelectorAll("a");
+    
+    // Extract just filename from URL path, ignoring query/hash and folder paths
+    function getFileName(url) {
+      let path = url.split("?")[0].split("#")[0];
+      path = path.substring(path.lastIndexOf("/") + 1);
+      return path || "index.html";
+    }
+    
+    const currentFile = getFileName(window.location.pathname);
+
+    links.forEach(link => {
+      if (getFileName(link.getAttribute("href")) === currentFile) {
+        link.classList.add("active");
+      } else {
+        link.classList.remove("active");
+      }
+    });
+  });
+</script>

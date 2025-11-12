@@ -127,12 +127,14 @@ char* resource_get_content_type(const char *path)
         "pdf",     "application/pdf",
         "zip",     "application/zip",
         "js",      "application/javascript",
+        "json",    "application/json",
     };
 
     const char *default_type = "application/octet-stream";
 
     // Try to map the extension
     char *ext = resource_get_extension(path);
+    if (!ext) { goto fallback; }
     for (size_t i = 0; i < sizeof(map) / sizeof(*map); i += 2)
     {
         if (strcmp(ext, map[i]) == 0)
@@ -143,6 +145,7 @@ char* resource_get_content_type(const char *path)
     }
 
     // If failed - fall back to octet-stream
+    fallback:
     free(ext);
     return strdup(default_type);
 }
@@ -178,6 +181,8 @@ int resource_get(int request_id, void **buff, size_t *buffsz, const char *path, 
             return 1;
         }
     }
+
+    printf("%.*s", (int)*buffsz, (char *)*buff);
 
     return 0;
 }

@@ -16,19 +16,45 @@
       </div>
     </header>
 
-    <nav role="navigation" aria-label="Main navigation">
-      <a href="index.html" title="Landing page">🏠 Landing</a>
-      <a href="features.html" title="Features page">✨ Features</a>
-      <a href="dynamic-tests.html" title="Dynamic tests page">🧪 Dynamic Tests</a>
-      <a href="server-status.html" title="Server status page">📊 Server Status</a>
-      <a href="error-handling.html" title="Error handling page">⚠️ Error Handling</a>
-      <a href="message-board.html" title="Message board">💬 Message Board</a>
-    </nav>
+    <ssfhs-dyn>cat navmenu.html</ssfhs-dyn>
 
     <section class="description">
-      <p>The server is running smoothly. Here would be live data about server health, uptime, and load.</p>
-      <p><em>Currently, this is a static placeholder with no live data.</em></p>
+      <p>If you see this, the server didn't crash or anything!</p>
     </section>
+
+    <section class="description" id="statusFields">
+      <div><strong>CPU Type:</strong> <span id="cpuType">Loading...</span></div>
+      <div><strong>CPU Usage:</strong> <span id="cpuUsage">Loading...</span></div>
+      <div><strong>Memory Usage:</strong> <span id="memoryUsage">Loading...</span></div>
+      <div><strong>Server Time:</strong> <span id="serverTime">Loading...</span></div>
+      <div><strong>Uptime:</strong> <span id="uptime">Loading...</span></div>
+      <div><strong>Request ID:</strong> <span id="requestId">Loading...</span></div>
+    </section>
+
+    <script>
+      async function fetchStatus() {
+        try {
+          const response = await fetch('/api/server-status.json', { cache: 'no-store' });
+          if (!response.ok) throw new Error('Network error');
+          const data = await response.json();
+
+          document.getElementById('uptime').textContent = data.uptime || 'N/A';
+          document.getElementById('cpuUsage').textContent = data.cpuUsage || 'N/A';
+          document.getElementById('memoryUsage').textContent = data.memoryUsage || 'N/A';
+          document.getElementById('requestId').textContent = data.requestId || 'N/A';
+          document.getElementById('cpuType').textContent = data.cpuType || 'N/A';
+          document.getElementById('serverTime').textContent = data.serverTime || 'N/A';
+        } catch (err) {
+          const fields = ['uptime', 'cpuUsage', 'memoryUsage', 'requestId', 'cpuType', 'serverTime'];
+          fields.forEach(id => {
+            document.getElementById(id).textContent = 'Error';
+          });
+        }
+      }
+
+      fetchStatus();
+      setInterval(fetchStatus, 5000);
+    </script>
 
     <div class="footer">
       <div class="credit small">Created by <strong>epsiii</strong> 🩵 — page crafted with help from <strong>ChatGPT</strong></div>
