@@ -4,18 +4,18 @@ Welcome to **SSFHS**, a fun and simple static file HTTP server! Why build it? We
 
 ---
 
-## 🚀 Features
+## Features
 
 - Supports **all HTTP methods**  
-- Logs request date & IP for incoming requests 🕒🌍  
-- Logs request User-Agent 🐾  
-- Blocks pesky path traversal attacks (no sneaky `..` allowed!) 🚫  
-- Dynamic content support (planned) ✨  
-- Protected file list - keep your secrets safe 🔒  
-- Custom error pages: 400, 403, 404 with style 🎨  
-- Custom index page support 📄  
-- Dynamic file listing for directories 📂  
-- CLI arguments for easy config 🛠️  
+- Logs request date & IP for incoming requests 
+- Logs request User-Agent
+- Blocks pesky path traversal attacks (no sneaky `..` allowed!) 
+- Dynamic content support (planned)
+- Protected file list - keep your secrets safe 
+- Custom error pages: 400, 403, 404 with style
+- Custom index page support
+- Dynamic file listing for directories 
+- CLI arguments for easy config 
 - Config file path customization  
 - Custom server data directory path  
 - Dedicated log file path  
@@ -25,9 +25,7 @@ Lots more features are brewing, stay tuned!
 
 ---
 
-## 🛠️ Building SSFHS
-
-Building SSFHS is as easy as pie! 🥧  
+## Building SSFHS
 
 Just run:  
 ```bash
@@ -48,7 +46,7 @@ make BUILD_MODE=DEBUG
 
 ---
 
-## 🧪 Examples & Usage
+## Examples & Usage
 
 Want to see SSFHS in action? Check out the example setups!
 
@@ -59,7 +57,7 @@ Want to see SSFHS in action? Check out the example setups!
 ---
 
 
-## 🛠️ Configuration File
+## Configuration File
 
 SSFHS uses a plain text config file to customize server behavior and features. Here's what you can set:
 
