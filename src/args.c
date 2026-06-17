@@ -20,9 +20,9 @@ static void print_help_and_exit(const char *prog_name)
     printf("Options:\n");
     printf("  -h, --help                    Show this help message and exit.\n");
     printf("  -p, --port [PORT]             Port to listen for connections (default: 8080).\n");
-    printf("  -d, --root-dir [DIR]          Root directory with the server files (required).\n");
+    printf("  -d, --root-dir [DIR]          Root directory with the server files (default: .).\n");
     printf("  -l, --log-file [FILE]         File for storing logs (default: ssfhs.log).\n");
-    printf("  -c, --config-file [FILE]      Server config file (required).\n");
+    printf("  -c, --config-file [FILE]      Server config file (default: ssfhs.conf).\n");
     printf("  -d, --debug                   Enable debug logs.\n");
 
     exit(EXIT_SUCCESS);
@@ -36,8 +36,9 @@ void cli_args_parse(ServerConfig *config, int argc, const char **argv)
     // Set default parameters
     config->debug = false;
     config->port = 8080;
-    config->config_file = NULL;
-    config->log_file = NULL;
+    config->config_file = "./ssfhs.conf";
+    config->log_file = "./ssfhs.log";
+    config->root_dir = ".";
 
     // Parse the arguments
     int arg_index = 1;
